@@ -1,0 +1,8 @@
+# Core Native Format Document Extraction Dependencies (P1)
+pymupdf>=1.24.0
+python-docx>=1.1.0
+python-pptx>=0.6.21
+pillow>=10.0.0
+
+# Testing and Validation
+pytest>=8.0.0
