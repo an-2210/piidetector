@@ -49,7 +49,9 @@ class P4Config:
             "body": 1.0,
             "slide": 0.9,
             "image_ocr": 0.8,
-            "table": 0.5,
+            # Tables carry real roster names, so they are down-weighted, not
+            # suppressed. At 0.5 almost every table name fell below threshold.
+            "table": 0.8,
         }
     )
     id_like_weight: float = 0.5

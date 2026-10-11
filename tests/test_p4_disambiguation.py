@@ -70,7 +70,8 @@ def test_block_weight_prefers_prose_over_tables_and_ocr():
     assert block_weight(body, config) == 1.0
     assert block_weight(table, config) == config.block_weights["table"]
     assert block_weight(ocr, config) == config.block_weights["image_ocr"]
-    assert block_weight(table, config) < block_weight(ocr, config) < block_weight(body, config)
+    assert block_weight(table, config) < block_weight(body, config)
+    assert block_weight(ocr, config) < block_weight(body, config)
 
 
 def test_id_like_tokens_are_detected_but_names_are_not():

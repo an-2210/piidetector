@@ -63,6 +63,9 @@ def extract_document(
     Set enable_ocr=True to run P2 OCR after native extraction. OCR results
     are merged into the same ExtractionResult.
 
+    Set enable_ner=True to run P4 (NER + fusion) last. Its output is stored
+    in result.metadata["p4"]. ner_config takes a P4Config or a dict of its fields.
+
     OCR-specific options:
         enable_ocr: Enable the P2 OCR pipeline. Defaults to False.
         ocr_confidence_threshold: Minimum OCR confidence, from 0 to 100.
@@ -86,6 +89,8 @@ def extract_document(
     ocr_upscale_factor = extractor_options.pop(
         "ocr_upscale_factor", 1.5
     )
+    enable_ner = extractor_options.pop("enable_ner", False)
+    ner_config = extractor_options.pop("ner_config", None)
 
     # Validate the file path.
     try:
@@ -153,5 +158,18 @@ def extract_document(
                 path.name,
             )
             result.errors.append(f"P2 OCR failed: {exc}")
+
+    # Optionally run P4 (NER + fusion) over the final blocks, including OCR blocks.
+    if enable_ner:
+        try:
+            from src.pii.hook import run_ner_stage
+
+            run_ner_stage(result, config=ner_config)
+        except Exception as exc:
+            logger.exception(
+                "P4 NER failed for '%s'",
+                path.name,
+            )
+            result.errors.append(f"P4 NER failed: {exc}")
 
     return result
