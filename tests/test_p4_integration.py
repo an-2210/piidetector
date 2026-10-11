@@ -111,6 +111,9 @@ def test_enable_ner_without_models_degrades_and_warns(case_docx):
 
 
 def test_missing_packages_warn_and_fall_back_without_crashing(case_docx, monkeypatch):
+    from src.pii import backends
+
+    backends.clear_model_cache()  # a cached model would hide the blocked import
     monkeypatch.setitem(__import__("sys").modules, "presidio_analyzer", None)
     monkeypatch.setitem(__import__("sys").modules, "gliner", None)
     registry.clear_registered_detectors()
