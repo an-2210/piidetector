@@ -79,12 +79,14 @@ def _finding_row(prediction) -> Dict:
     }
 
 
-def run_mode(mode: str, truth: GroundTruth, sample_dir: Path) -> Dict:
+def run_mode(mode: str, truth: GroundTruth, sample_dir: Path, overrides: Optional[Dict] = None) -> Dict:
+    overrides = overrides or {}
+    emit_org = overrides.get("emit_org", True)
     reason = _apply_mode(mode)
     if reason:
-        return {"mode": mode, "status": "skipped", "reason": reason}
+        return {"mode": mode, "emit_org": emit_org, "status": "skipped", "reason": reason}
 
-    cfg = {**_mode_config(mode), "emit_debug": False}
+    cfg = {**_mode_config(mode), **overrides, "emit_debug": False}
     per_file = {}
     warnings: List[str] = []
     for file in truth.files:
@@ -120,6 +122,7 @@ def run_mode(mode: str, truth: GroundTruth, sample_dir: Path) -> Dict:
 
     return {
         "mode": mode,
+        "emit_org": emit_org,
         "status": "ran",
         "title": MODE_TITLES[mode],
         "config": cfg,
@@ -243,7 +246,8 @@ def render_markdown(modes: List[Dict], address: Optional[Dict], truth: GroundTru
         "",
     ]
     for mode in modes:
-        lines.append(f"## {MODE_TITLES.get(mode['mode'], mode['mode'])}")
+        org_note = "ORG emitted" if mode.get("emit_org", True) else "ORG suppressed (used for disambiguation only)"
+        lines.append(f"## {MODE_TITLES.get(mode['mode'], mode['mode'])} [{org_note}]")
         lines.append("")
         if mode["status"] == "skipped":
             lines += [f"**Skipped:** {mode['reason']}", ""]
@@ -322,6 +326,8 @@ def render_markdown(modes: List[Dict], address: Optional[Dict], truth: GroundTru
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate P4 on the hand-labelled samples.")
     parser.add_argument("--modes", nargs="+", choices=MODES, default=list(MODES))
+    parser.add_argument("--emit-org", choices=("true", "false", "both"), default="both",
+                        help="Run with ORG emitted, suppressed, or both (default: both).")
     parser.add_argument("--ground-truth", type=Path, default=SAMPLES / "ground_truth.json")
     parser.add_argument("--samples", type=Path, default=SAMPLES)
     parser.add_argument("--out", type=Path, default=RESULTS)
@@ -333,7 +339,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"Missing sample files: {missing}", file=sys.stderr)
         return 2
 
-    modes = [run_mode(mode, truth, args.samples) for mode in args.modes]
+    emit_settings = {"true": [True], "false": [False], "both": [True, False]}[args.emit_org]
+    modes = [
+        run_mode(mode, truth, args.samples, {"emit_org": emit})
+        for mode in args.modes
+        for emit in emit_settings
+    ]
     address = address_diagnostics(truth, args.samples) if "ner_only" in args.modes else None
     registry.clear_registered_detectors()
 
@@ -344,11 +355,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     (args.out / "eval_report.md").write_text(render_markdown(modes, address, truth), encoding="utf-8")
     for mode in modes:
+        label = f"{mode['mode']} emit_org={str(mode['emit_org']).lower()}"
         if mode["status"] == "ran":
             o = mode["scores"]["overall"]
-            print(f"{mode['mode']:<12} P={_pct(o['precision'])} R={_pct(o['recall'])} F1={_pct(o['f1'])}")
+            print(f"{label:<32} P={_pct(o['precision'])} R={_pct(o['recall'])} F1={_pct(o['f1'])}")
         else:
-            print(f"{mode['mode']:<12} skipped: {mode['reason']}")
+            print(f"{label:<32} skipped: {mode['reason']}")
     print(f"wrote {args.out / 'eval_report.md'}")
     return 0
 

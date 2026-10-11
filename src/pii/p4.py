@@ -15,10 +15,11 @@ from src.pii.address import find_addresses
 from src.pii.backends import NERBackend, load_backends
 from src.pii.config import P4Config
 from src.pii.contracts import DETECTORS, PII_TYPES, Finding, ignore_spans, overlaps_ignore
-from src.pii.disambiguate import decide_label
+from src.pii.disambiguate import decide_label, org_false_positive_reason
 from src.pii.fusion import fuse
 from src.pii.linking import extract_evidence
 from src.pii.prose import block_weight, in_priority_section, is_id_like
+from src.pii.relabel import force_person_by_header, relabel_org_by_identity
 from src.pii.resolve import resolve_identities
 
 ConfigLike = Union[P4Config, Dict[str, Any], None]
@@ -59,6 +60,7 @@ def _ner_candidates(
     config: P4Config,
     warnings: List[str],
     ignored: List[Finding],
+    stats: Dict[str, int],
 ) -> List[Finding]:
     """Turn raw backend spans into adjusted NER Findings, block by block."""
     candidates: List[Finding] = []
@@ -126,6 +128,10 @@ def _ner_candidates(
 
             if decision.label not in PII_TYPES:
                 continue
+            if decision.label == "ORG" and config.org_filter_enabled:
+                if org_false_positive_reason(entity.text, config) is not None:
+                    stats["org_filtered"] = stats.get("org_filtered", 0) + 1
+                    continue
             candidates.append(
                 Finding.from_block(
                     block,
@@ -187,7 +193,8 @@ def run_p4_report(
                 "No NER backend is available; P4 is returning rule findings only."
             )
 
-    ner = _ner_candidates(blocks, backends, cfg, warnings, ignored)
+    stats: Dict[str, int] = {}
+    ner = _ner_candidates(blocks, backends, cfg, warnings, ignored, stats)
 
     if rule_findings:
         rules = _accept_rule_findings(rule_findings, warnings)
@@ -203,11 +210,25 @@ def run_p4_report(
 
     identities: List[dict] = []
     conflicts: List[str] = []
+    before_header = [f.pii_type for f in final]
+    final = force_person_by_header(final, blocks, cfg)
+    stats["header_relabelled"] = sum(1 for a, f in zip(before_header, final) if a != f.pii_type)
     if cfg.enable_linking:
         resolved = resolve_identities(final, evidence, blocks)
+        before_identity = [f.pii_type for f in resolved.findings]
+        relabelled = relabel_org_by_identity(resolved.findings, resolved.identities)
+        stats["identity_relabelled"] = sum(1 for a, f in zip(before_identity, relabelled) if a != f.pii_type)
+        if stats["identity_relabelled"]:
+            resolved = resolve_identities(relabelled, evidence, blocks)
         final = resolved.findings
         identities = resolved.identities
         conflicts = resolved.conflicts
+
+    # ORG spans still shaped the result above (fusion, relabelling); emit_org only hides them.
+    if not cfg.emit_org:
+        before_drop = len(final)
+        final = [f for f in final if f.pii_type != "ORG"]
+        stats["org_suppressed"] = before_drop - len(final)
 
     return P4Report(
         findings=final,
@@ -216,6 +237,10 @@ def run_p4_report(
         warnings=warnings,
         backends=[b.name for b in backends],
         counts={
+            "org_filtered": stats.get("org_filtered", 0),
+            "header_relabelled": stats.get("header_relabelled", 0),
+            "identity_relabelled": stats.get("identity_relabelled", 0),
+            "org_suppressed": stats.get("org_suppressed", 0),
             "rule_input": len(rules) + len(extra_rules),
             "ner_candidates": len(ner),
             "ner_ignored": len(ignored),

@@ -113,6 +113,7 @@ def make_decoys_memo_docx() -> None:
         "Achebe Holdings Ltd pays the fee for the Lagos office.",
         "Several items were logged. Following the audit, Policy GRP-POL-LAGOS-01 applies.",
         "In March 2026 the RSK-2024-0031 file was closed. The Monday review used USD 18,000.",
+        "Finance and Legal reviewed the file. Head of Compliance signed off. The SSN and DOB fields were checked by the Lagos Operations Team.",
     ]
     for line in lines:
         document.add_paragraph(line)

@@ -539,6 +539,48 @@
       "page": null,
       "text": "USD 18,000",
       "kind": "usd_amount"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Finance",
+      "kind": "org_generic_word",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Legal",
+      "kind": "org_generic_word",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Head of Compliance",
+      "kind": "org_role_phrase",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "SSN",
+      "kind": "org_pii_label",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "DOB",
+      "kind": "org_pii_label",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "the Lagos Operations Team",
+      "kind": "org_unit_phrase",
+      "not_type": "ORG"
     }
   ]
 }

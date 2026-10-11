@@ -16,7 +16,8 @@ from src.pii.contracts import PII_TYPES
 SOURCE_KINDS = ("body", "table", "slide", "image_ocr")
 DECOY_KINDS = (
     "rsk_ref", "usd_amount", "policy_date", "grp_ref", "org_contains_person", "committee_title",
-    "title_role", "sentence_start_word", "month_name", "place_non_address", "other",
+    "title_role", "sentence_start_word", "month_name", "place_non_address",
+    "org_generic_word", "org_role_phrase", "org_pii_label", "org_unit_phrase", "other",
 )
 
 

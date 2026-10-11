@@ -104,3 +104,29 @@ def decide_label(
     if disagreement:
         return LabelDecision(label, config.ambiguity_penalty, "backend_disagreement")
     return LabelDecision(label, 1.0, "agreed_or_no_conflict")
+
+
+def org_false_positive_reason(text: str, config: P4Config) -> Optional[str]:
+    """Why an ORG span is not an organisation, or None if it may be one.
+
+    Categories (lists live in P4Config):
+      generic_word     a single common word: Audit, Finance, Legal, Risk, ...
+      role_phrase      a job or role: "Head of Audit", "Chief Risk Officer"
+      unit_phrase      "the <words> Committee|Board|Department|Team|...", a governance body
+      pii_field_label  a field label that NER tags as ORG: SSN, Email, DOB, ...
+    A span with a legal suffix is never treated as a false positive here.
+    """
+    value = text.strip()
+    if not value or ORG_SUFFIX.search(value):
+        return None
+    lowered = value.casefold()
+    if lowered in {w.casefold() for w in config.org_generic_words}:
+        return "generic_word"
+    if lowered in {w.casefold() for w in config.pii_field_labels}:
+        return "pii_field_label"
+    for pattern in config.org_role_patterns:
+        if re.search(pattern, value, re.IGNORECASE):
+            return "role_phrase"
+    if re.match(config.org_unit_pattern, value, re.IGNORECASE):
+        return "unit_phrase"
+    return None

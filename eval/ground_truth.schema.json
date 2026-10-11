@@ -132,7 +132,11 @@
             "sentence_start_word",
             "month_name",
             "place_non_address",
-            "other"
+            "other",
+            "org_generic_word",
+            "org_role_phrase",
+            "org_pii_label",
+            "org_unit_phrase"
           ]
         },
         "not_type": {

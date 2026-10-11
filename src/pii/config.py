@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any, Dict, Mapping, Optional, Tuple
 
 
@@ -70,6 +70,33 @@ class P4Config:
     address_house_bonus: float = 0.15
     address_tail_bonus: float = 0.10
     address_cue_bonus: float = 0.15
+    # ORG false-positive filter (see disambiguate.org_false_positive_reason).
+    org_filter_enabled: bool = True
+    org_generic_words: Tuple[str, ...] = (
+        "Audit", "Finance", "Legal", "Compliance", "HR", "Risk", "Operations",
+        "Security", "Treasury", "Procurement", "Management", "Governance", "IT",
+        "Committee", "Board", "Department", "Team", "Unit", "Function", "Office",
+    )
+    org_role_patterns: Tuple[str, ...] = (
+        r"^Head of\b",
+        r"^Director of\b",
+        r"^Manager of\b",
+        r"^Chief\b.*\bOfficer$",
+        r"^Deputy\b",
+    )
+    org_unit_pattern: str = (
+        r"^the\s+(?:[A-Za-z][\w-]*\s+){0,3}(?:Committee|Board|Department|Team|Function|Office|Unit)$"
+    )
+    pii_field_labels: Tuple[str, ...] = (
+        "SSN", "PAN", "DOB", "TIN", "PESEL", "Email", "Phone", "IBAN",
+        "Card", "Account", "Passport", "Tax ID",
+    )
+    # Table column headers that mark a cell as a person (no legal suffix allowed).
+    person_column_headers: Tuple[str, ...] = (
+        "name", "full name", "employee", "employee name", "contact", "owner", "applicant", "staff",
+    )
+    # False: ORG is used for disambiguation and relabelling, then dropped from output.
+    emit_org: bool = True
 
     @classmethod
     def from_mapping(cls, data: Optional[Mapping[str, Any]]) -> "P4Config":
@@ -82,8 +109,7 @@ class P4Config:
         if isinstance(data, P4Config):
             return data
         values = dict(data)
-        if "priority_sections" in values:
-            values["priority_sections"] = tuple(values["priority_sections"])
-        if "address_street_suffixes" in values:
-            values["address_street_suffixes"] = tuple(values["address_street_suffixes"])
+        for field_info in fields(cls):
+            if isinstance(field_info.default, tuple) and field_info.name in values:
+                values[field_info.name] = tuple(values[field_info.name])
         return cls(**values)
