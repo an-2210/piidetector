@@ -1,10 +1,11 @@
+
 """Unified document extraction pipeline entry point."""
 
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Type, Union
 
 from src.extractors.base import BaseExtractor
 from src.extractors.docx_extractor import DocxExtractor
@@ -22,27 +23,21 @@ EXTRACTOR_REGISTRY: Dict[str, Type[BaseExtractor]] = {
 }
 
 
-def get_extractor_for_file(file_path: Union[str, Path]) -> BaseExtractor:
-    """Resolve and instantiate the appropriate extractor for the given file extension.
-
-    Args:
-        file_path: Path to the target document.
-
-    Returns:
-        An instance of BaseExtractor.
-
-    Raises:
-        ValueError: If file format extension is unsupported.
-    """
+def get_extractor_for_file(
+    file_path: Union[str, Path],
+) -> BaseExtractor:
+    """Resolve the appropriate native extractor."""
     path = Path(file_path)
     ext = path.suffix.lower()
     extractor_cls = EXTRACTOR_REGISTRY.get(ext)
+
     if not extractor_cls:
         supported = list(EXTRACTOR_REGISTRY.keys())
         raise ValueError(
-            f"Unsupported document format '{ext}' for file: {path.name}. "
-            f"Supported native formats are: {supported}"
+            f"Unsupported document format '{ext}' for file: "
+            f"{path.name}. Supported native formats are: {supported}"
         )
+
     return extractor_cls()
 
 
@@ -50,44 +45,76 @@ def extract_document(
     file_path: Union[str, Path],
     **options: Any,
 ) -> ExtractionResult:
-    """Primary entry point to extract structured TextBlocks from PDF, DOCX, or PPTX.
+    """Extract document content using P1, optionally followed by P2 OCR.
 
-    Args:
-        file_path: Path to raw PDF, DOCX, or PPTX file.
-        **options: Format-specific configuration passed directly to extractor
-                   (e.g. ocr_char_threshold, include_headers_footers, include_speaker_notes).
+    OCR is disabled by default to preserve existing P1 behavior.
 
-    Returns:
-        ExtractionResult containing structured TextBlocks, OCR handoff flags,
-        and source metadata.
+    OCR options:
+        enable_ocr: Enable P2 OCR. Defaults to False.
+        ocr_confidence_threshold: Minimum OCR confidence (0-100).
+        ocr_render_dpi: DPI for rendering PDF pages.
+        ocr_upscale_factor: Image preprocessing scale factor.
+
+    Remaining options are passed to the native extractor.
     """
+    extractor_options = dict(options)
+
+    enable_ocr = extractor_options.pop("enable_ocr", False)
+    confidence_threshold = extractor_options.pop(
+        "ocr_confidence_threshold", 30.0
+    )
+    render_dpi = extractor_options.pop("ocr_render_dpi", 200)
+    upscale_factor = extractor_options.pop("ocr_upscale_factor", 1.5)
+
     try:
         path = validate_file_path(file_path)
-    except Exception as e:
-        logger.error("File validation failed for '%s': %s", file_path, e)
+    except Exception as exc:
+        logger.error("File validation failed for '%s': %s", file_path, exc)
         filename = Path(file_path).name if file_path else "unknown"
-        res = ExtractionResult(source_file=filename, source_type="UNKNOWN")
-        res.errors.append(str(e))
-        return res
+        result = ExtractionResult(
+            source_file=filename,
+            source_type="UNKNOWN",
+        )
+        result.errors.append(str(exc))
+        return result
 
     try:
         extractor = get_extractor_for_file(path)
-    except ValueError as val_err:
-        logger.error("Unsupported file format for '%s': %s", path.name, val_err)
-        res = ExtractionResult(
+    except ValueError as exc:
+        logger.error(
+            "Unsupported file format for '%s': %s", path.name, exc
+        )
+        result = ExtractionResult(
             source_file=path.name,
             source_type=path.suffix.upper().lstrip("."),
         )
-        res.errors.append(str(val_err))
-        return res
+        result.errors.append(str(exc))
+        return result
 
     try:
-        return extractor.extract(path, **options)
+        result = extractor.extract(path, **extractor_options)
     except Exception as exc:
-        logger.error("Unexpected error extracting '%s': %s", path.name, exc)
-        res = ExtractionResult(
+        logger.exception("Unexpected error extracting '%s'", path.name)
+        result = ExtractionResult(
             source_file=path.name,
             source_type=path.suffix.upper().lstrip("."),
         )
-        res.errors.append(f"Extraction failed: {exc}")
-        return res
+        result.errors.append(f"Extraction failed: {exc}")
+        return result
+
+    if enable_ocr:
+        try:
+            from src.ocr.pipeline import run_ocr_pipeline
+
+            result = run_ocr_pipeline(
+                file_path=path,
+                extraction_result=result,
+                confidence_threshold=confidence_threshold,
+                render_dpi=render_dpi,
+                upscale_factor=upscale_factor,
+            )
+        except Exception as exc:
+            logger.exception("P2 OCR failed for '%s'", path.name)
+            result.errors.append(f"P2 OCR failed: {exc}")
+
+    return result
