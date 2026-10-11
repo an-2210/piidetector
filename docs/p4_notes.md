@@ -43,28 +43,36 @@ Identity IDs are `PERSON_1`, `PERSON_2`, … ordered by canonical name, then fir
 
 ## Metrics
 
-Measured on a hand-labelled synthetic set: 4 files (DOCX prose, DOCX table, PPTX, image-only scanned PDF), 39 labels, 9 decoys. Run with `.venv/bin/python eval/run_eval.py`. Full tables are in `eval/results/eval_report.md`.
+Measured on a hand-labelled synthetic set: 6 files (DOCX prose, DOCX table, PPTX, image-only scanned PDF, a structured-identifier annex, and a decoy memo), 57 labels, 19 decoys (21 occurrences). Run with `.venv/bin/python eval/run_eval.py`. Full tables: `eval/results/eval_report.md`.
 
 | Mode | Precision | Recall | F1 |
 |---|---|---|---|
-| NER only (spaCy; Presidio structured types and internal extractor on) | 81.6% | 79.5% | 80.5% |
-| NER + mock P3 (regex EMAIL/EMP_ID as rule findings) | 81.6% | 79.5% | 80.5% |
+| NER only (spaCy; Presidio structured types and internal extractor on) | 86.8% | 80.7% | 83.6% |
+| NER + mock P3 (regex rules with owner `p3`) | 88.9% | 98.2% | 93.3% |
 | NER + real P3 | not run: no P3 detector is registered yet | | |
 
-- **By type (NER + mock P3):** PERSON 90.9% F1, EMAIL 100%, EMP_ID 100%, ORG 66.7% (precision 50%: street names and "Audit" come out as ORG), ADDRESS 0% recall.
-- **By source:** body 85.7% F1, table 74.1%, slide 83.3%, scanned image OCR 80.0%.
-- **Identity (corpus run, pairwise):** precision 100% (18 of 18 predicted pairs), recall 94.7% (18 of 19). The one missed pair comes from a table mention that NER did not catch.
-- **Decoys:** 0 decoy false positives. These samples do not stress this much, because spaCy rarely tags reference IDs or amounts anyway.
-- **Mock P3 vs NER only:** identical here, because the mock and the internal extractor find the same EMAIL and EMP_ID spans. This does not show what a real P3 would add.
-- **GLiNER:** not installed, so it was not run.
+Per-type, NER only, then NER + mock P3 (P / R):
 
-**Address recall** is the weak point; see the diagnostics section of the report. spaCy tags LOCATION, which P4 maps to ADDRESS at half score (0.425), below the 0.5 threshold, so it is dropped by default. Exact recall is 0% at every threshold. Overlap recall (any part of an address found) reaches 85.7% at threshold 0.3, but most of those hits are a city or a street fragment, so they would not count as a correct address.
+| Type | NER only | NER + mock P3 |
+|---|---|---|
+| PERSON | 86.7 / 92.9 | same |
+| ORG | 58.3 / 100.0 | same |
+| ADDRESS | 100.0 / 100.0 | same |
+| EMAIL | 100.0 / 100.0 | 100.0 / 100.0 |
+| EMP_ID | 100.0 / 100.0 | 100.0 / 100.0 |
+| SSN, PAN, PESEL, TIN, DOB, card and account last-4, DIR, MER-IN, MER-PH | 0 / 0 | 100.0 / 100.0 |
 
-Caveats on these numbers: the samples are small (39 labels), synthetic and hand-labelled by the same person who wrote the pipeline. A single missed label moves recall by about 2.5 points. Treat them as a baseline for regression, not as a production accuracy estimate.
+- **Address (ADDRESS):** exact recall 100% and overlap recall 100% at every threshold tried (0.1, 0.3, 0.5). Before the pattern, exact recall was 0%. **Caveat:** the pattern was written with these sample addresses in view, so this figure overstates how well it generalises. The decoys in the memo are the only out-of-sample check, and they contain no new address shapes.
+- **ORG precision:** 41.2% before the address pattern, 58.3% after. Fixed: street names that spaCy tagged as ORG (for example "Broad Street", "Admiralty Way"), which now lose to the pattern address. Remaining ORG false positives: "Audit" (twice, from "Head of Audit"), "the Risk Committee", "SSN" (label text tagged as ORG), and "Grace Achebe" in a table. spaCy gives every ORG-like span the same 0.85, so context has to do the separating.
+- **Decoys:** one false positive out of 21 decoy occurrences, in the category "committee title": "the Risk Committee" tagged as ORG. Other categories held: legal-suffix org names containing a surname, title roles, sentence-start words, months, GRP references, USD amounts, RSK references, policy dates and "the Lagos office".
+- **Identity (corpus, pairwise):** precision 100%, recall 94.7%. The missed pair comes from the table mention "Grace Achebe", which NER tags as ORG.
+- **Mock P3 vs NER only:** the difference is the structured types, which NER never emits. Labelled PERSON and ADDRESS fields and the duplicate email do not change the scores here, because NER already finds those spans or the owner rule wins on the same span.
+
+Caveats: 57 labels and 19 decoys is a small sample. The labels were written by the same person who wrote the pipeline. One missed label moves recall by about 1.8 points. Treat these as a regression baseline, not as production accuracy.
 
 ## Limitations
 
-- **Presidio's spaCy scores are flat.** On the synthetic document every spaCy span came back at 0.900, so the confidence threshold separates them only through the weights and cues. Calibration needs ground truth.
+- **spaCy's scores are flat.** On the synthetic document every spaCy span came back at 0.900, so the confidence threshold separates them only through the weights and cues. Calibration needs ground truth.
 - **Location is discounted to ADDRESS.** A city or country is far more often a location than a postal address, so its score is multiplied by 0.5.
 - **Block IDs are random per run.** `TextBlock.block_id` is a uuid4 generated by P1. Everything else in P4 output is deterministic, but `Finding.block_id` changes between runs. Making it deterministic needs a change in P1, which was out of scope.
 - **Cross-file linking needs one call.** `run_p4` links people across files only when all blocks are passed together. The per-document pipeline hook gives per-document identities.
