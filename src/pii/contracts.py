@@ -104,6 +104,10 @@ class Finding:
     slide_number: Optional[int] = None
     section_or_heading: Optional[str] = None
     reading_order: int = 0
+    # Who is authoritative for this span. "p3": a rule detector's labelled-field or
+    # structured match, which beats NER on overlap. "p4": P4's own pattern address.
+    # None: no claim (the default type-based rules apply).
+    owner: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """JSON-serialisable dict."""
@@ -124,6 +128,7 @@ class Finding:
         detector: str,
         confidence: float,
         sources: Sequence[str],
+        owner: Optional[str] = None,
     ) -> "Finding":
         """Create a Finding for a span of `block.text`, copying block location."""
         return cls(
@@ -143,6 +148,7 @@ class Finding:
             slide_number=block.slide_number,
             section_or_heading=block.section_or_heading,
             reading_order=block.reading_order,
+            owner=owner,
         )
 
 

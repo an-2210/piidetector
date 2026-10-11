@@ -67,8 +67,8 @@ def test_missing_spacy_model_falls_back_with_warning(monkeypatch):
     assert "spacy" in warnings[0]
 
 
-def test_location_label_is_discounted_relative_to_person(monkeypatch):
-    """LOCATION maps to ADDRESS but at a lower score than the raw Presidio score."""
+def test_location_is_a_raw_place_cue_not_an_address(monkeypatch):
+    """LOCATION keeps its raw score and label. It is never emitted as ADDRESS on its own."""
     class FakeResult:
         def __init__(self, entity_type, start, end, score):
             self.entity_type, self.start, self.end, self.score = entity_type, start, end, score
@@ -91,7 +91,7 @@ def test_location_label_is_discounted_relative_to_person(monkeypatch):
     out = backend.predict(text)
 
     by_label = {e.label: e for e in out}
-    assert set(by_label) == {"PERSON", "ADDRESS"}
+    assert set(by_label) == {"PERSON", "LOCATION"}
     assert by_label["PERSON"].score == pytest.approx(0.85)
-    assert by_label["ADDRESS"].score == pytest.approx(0.85 * backends.LOCATION_SCORE_FACTOR)
-    assert by_label["ADDRESS"].text == "Lagos"
+    assert by_label["LOCATION"].score == pytest.approx(0.85)
+    assert by_label["LOCATION"].text == "Lagos"

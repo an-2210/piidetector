@@ -5,15 +5,15 @@ Matching: file + location + pii_type + normalised text; when a label has a span,
 
 ## NER only (standalone; Presidio structured recognisers and internal extractor on)
 
-Backends: spacy. Overall: P 81.6%, R 79.5%, F1 80.5% (TP 31, FP 7, FN 8).
+Backends: spacy. Overall: P 92.7%, R 97.4%, F1 95.0% (TP 38, FP 3, FN 1).
 
 ### By PII type
 
 | Type | TP | FP | FN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|
 | PERSON | 10 | 1 | 1 | 90.9% | 90.9% | 90.9% |
-| ORG | 6 | 6 | 0 | 50.0% | 100.0% | 66.7% |
-| ADDRESS | 0 | 0 | 7 | n/a | 0.0% | n/a |
+| ORG | 6 | 2 | 0 | 75.0% | 100.0% | 85.7% |
+| ADDRESS | 7 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | EMAIL | 8 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | EMP_ID | 7 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 
@@ -21,10 +21,10 @@ Backends: spacy. Overall: P 81.6%, R 79.5%, F1 80.5% (TP 31, FP 7, FN 8).
 
 | Source | TP | FP | FN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|
-| body | 12 | 2 | 2 | 85.7% | 85.7% | 85.7% |
-| table | 10 | 3 | 4 | 76.9% | 71.4% | 74.1% |
-| slide | 5 | 1 | 1 | 83.3% | 83.3% | 83.3% |
-| image_ocr | 4 | 1 | 1 | 80.0% | 80.0% | 80.0% |
+| body | 14 | 1 | 0 | 93.3% | 100.0% | 96.6% |
+| table | 13 | 1 | 1 | 92.9% | 92.9% | 92.9% |
+| slide | 6 | 0 | 0 | 100.0% | 100.0% | 100.0% |
+| image_ocr | 5 | 1 | 0 | 83.3% | 100.0% | 90.9% |
 
 Decoy false positives: 0.
 
@@ -34,40 +34,29 @@ Warnings: NER backend 'gliner' skipped: gliner is not installed (pip install gli
 
 <details><summary>Missed labels</summary>
 
-- briefing.pptx p2 [slide] ADDRESS: '9 Broad Street, Lagos Island'
-- prose_case.docx p- [body] ADDRESS: '14 Harbour View Road, Lagos'
-- prose_case.docx p- [body] ADDRESS: 'Marina Street, Ibadan'
-- roster_table.docx p- [table] ADDRESS: '14 Harbour View Road, Lagos'
-- roster_table.docx p- [table] ADDRESS: '7 Admiralty Way, Lekki'
-- roster_table.docx p- [table] ADDRESS: '9 Broad Street, Lagos Island'
 - roster_table.docx p- [table] PERSON: 'Grace Achebe'
-- scanned_intake.pdf p1 [image_ocr] ADDRESS: '14 Harbour View Road, Lagos'
 
 </details>
 
 <details><summary>False positives</summary>
 
-- briefing.pptx [slide] ORG: 'Broad Street' (conf 0.765)
-- prose_case.docx [body] ORG: 'Ibadan' (conf 0.9)
 - prose_case.docx [body] ORG: 'Audit' (conf 0.9)
 - roster_table.docx [table] ORG: 'Grace Achebe' (conf 0.68)
-- roster_table.docx [table] ORG: 'Admiralty Way' (conf 0.68)
-- roster_table.docx [table] ORG: 'Broad Street' (conf 0.68)
 - scanned_intake.pdf [image_ocr] PERSON: 'Email' (conf 0.68)
 
 </details>
 
 ## NER + mock P3 (regex EMAIL/EMP_ID as rule findings; defer on)
 
-Backends: spacy. Overall: P 81.6%, R 79.5%, F1 80.5% (TP 31, FP 7, FN 8).
+Backends: spacy. Overall: P 92.7%, R 97.4%, F1 95.0% (TP 38, FP 3, FN 1).
 
 ### By PII type
 
 | Type | TP | FP | FN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|
 | PERSON | 10 | 1 | 1 | 90.9% | 90.9% | 90.9% |
-| ORG | 6 | 6 | 0 | 50.0% | 100.0% | 66.7% |
-| ADDRESS | 0 | 0 | 7 | n/a | 0.0% | n/a |
+| ORG | 6 | 2 | 0 | 75.0% | 100.0% | 85.7% |
+| ADDRESS | 7 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | EMAIL | 8 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 | EMP_ID | 7 | 0 | 0 | 100.0% | 100.0% | 100.0% |
 
@@ -75,10 +64,10 @@ Backends: spacy. Overall: P 81.6%, R 79.5%, F1 80.5% (TP 31, FP 7, FN 8).
 
 | Source | TP | FP | FN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|
-| body | 12 | 2 | 2 | 85.7% | 85.7% | 85.7% |
-| table | 10 | 3 | 4 | 76.9% | 71.4% | 74.1% |
-| slide | 5 | 1 | 1 | 83.3% | 83.3% | 83.3% |
-| image_ocr | 4 | 1 | 1 | 80.0% | 80.0% | 80.0% |
+| body | 14 | 1 | 0 | 93.3% | 100.0% | 96.6% |
+| table | 13 | 1 | 1 | 92.9% | 92.9% | 92.9% |
+| slide | 6 | 0 | 0 | 100.0% | 100.0% | 100.0% |
+| image_ocr | 5 | 1 | 0 | 83.3% | 100.0% | 90.9% |
 
 Decoy false positives: 0.
 
@@ -88,32 +77,17 @@ Warnings: NER backend 'gliner' skipped: gliner is not installed (pip install gli
 
 <details><summary>Missed labels</summary>
 
-- briefing.pptx p2 [slide] ADDRESS: '9 Broad Street, Lagos Island'
-- prose_case.docx p- [body] ADDRESS: '14 Harbour View Road, Lagos'
-- prose_case.docx p- [body] ADDRESS: 'Marina Street, Ibadan'
-- roster_table.docx p- [table] ADDRESS: '14 Harbour View Road, Lagos'
-- roster_table.docx p- [table] ADDRESS: '7 Admiralty Way, Lekki'
-- roster_table.docx p- [table] ADDRESS: '9 Broad Street, Lagos Island'
 - roster_table.docx p- [table] PERSON: 'Grace Achebe'
-- scanned_intake.pdf p1 [image_ocr] ADDRESS: '14 Harbour View Road, Lagos'
 
 </details>
 
 <details><summary>False positives</summary>
 
-- briefing.pptx [slide] ORG: 'Broad Street' (conf 0.765)
-- prose_case.docx [body] ORG: 'Ibadan' (conf 0.9)
 - prose_case.docx [body] ORG: 'Audit' (conf 0.9)
 - roster_table.docx [table] ORG: 'Grace Achebe' (conf 0.68)
-- roster_table.docx [table] ORG: 'Admiralty Way' (conf 0.68)
-- roster_table.docx [table] ORG: 'Broad Street' (conf 0.68)
 - scanned_intake.pdf [image_ocr] PERSON: 'Email' (conf 0.68)
 
 </details>
-
-## NER + real P3 (registered detector)
-
-**Skipped:** no P3 rule detector registered or importable (src.pii.rules.get_detector)
 
 ## ADDRESS diagnostics (spaCy only)
 
@@ -121,26 +95,14 @@ How spaCy handles ADDRESS: Presidio's spaCy recogniser tags LOCATION spans. The 
 
 | Threshold | Exact recall (scoring rule) | Overlap recall (any part found) | Matched | Overlapped | Predicted | Truth | Exact precision |
 |---|---|---|---|---|---|---|---|
-| 0.5 | 0.0% | 0.0% | 0 | 0 | 0 | 7 | n/a |
-| 0.3 | 0.0% | 85.7% | 0 | 6 | 6 | 7 | 0.0% |
-| 0.1 | 0.0% | 85.7% | 0 | 6 | 6 | 7 | 0.0% |
+| 0.5 | 100.0% | 100.0% | 7 | 7 | 7 | 7 | 100.0% |
+| 0.3 | 100.0% | 100.0% | 7 | 7 | 7 | 7 | 100.0% |
+| 0.1 | 100.0% | 100.0% | 7 | 7 | 7 | 7 | 100.0% |
 
 Misses at the default threshold (0.5), out of 7 ADDRESS labels:
 
-- briefing.pptx [slide] '9 Broad Street, Lagos Island': spaCy: 'Broad Street' label ORG raw 0.85; 'Lagos Island' label ADDRESS raw 0.425. Fused candidates: 'Broad Street' ORG conf 0.765; 'Lagos Island' ADDRESS conf 0.3825.
-- prose_case.docx [body] '14 Harbour View Road, Lagos': spaCy: 'Lagos' label ADDRESS raw 0.425. Fused candidates: 'Lagos' ADDRESS conf 0.475.
-- prose_case.docx [body] 'Marina Street, Ibadan': spaCy: 'Marina Street' label ADDRESS raw 0.425; 'Ibadan' label ORG raw 0.85. Fused candidates: 'Marina Street' ADDRESS conf 0.475; 'Ibadan' ORG conf 0.9.
-- roster_table.docx [table] '14 Harbour View Road, Lagos': spaCy: 'Lagos' label ADDRESS raw 0.425. Fused candidates: 'Lagos' ADDRESS conf 0.34.
-- roster_table.docx [table] '7 Admiralty Way, Lekki': spaCy: 'Admiralty Way' label ORG raw 0.85. Fused candidates: 'Admiralty Way' ORG conf 0.68.
-- roster_table.docx [table] '9 Broad Street, Lagos Island': spaCy: 'Broad Street' label ORG raw 0.85; 'Lagos Island' label ADDRESS raw 0.425. Fused candidates: 'Broad Street' ORG conf 0.68; 'Lagos Island' ADDRESS conf 0.34.
-- scanned_intake.pdf [image_ocr] '14 Harbour View Road, Lagos': spaCy: 'Lagos' label ADDRESS raw 0.425. Fused candidates: 'Lagos' ADDRESS conf 0.34.
 
 Raw spaCy ADDRESS (LOCATION) spans found anywhere:
 
-- briefing.pptx: 'Lagos Island' raw 0.425
-- prose_case.docx: 'Lagos' raw 0.425
-- prose_case.docx: 'Marina Street' raw 0.425
-- roster_table.docx: 'Lagos' raw 0.425
-- roster_table.docx: 'Lagos Island' raw 0.425
-- scanned_intake.pdf: 'Lagos' raw 0.425
+- none
 

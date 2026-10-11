@@ -59,6 +59,17 @@ class P4Config:
     priority_boost: float = 0.05
     enable_linking: bool = True
     emit_debug: bool = False
+    # Deterministic street-address pattern (see src/pii/address.py).
+    enable_address_pattern: bool = True
+    address_street_suffixes: Tuple[str, ...] = (
+        "Road", "Rd", "Street", "St", "Avenue", "Ave", "Way", "Lane", "Ln",
+        "Close", "Crescent", "Cres", "Drive", "Boulevard", "Blvd", "Estate",
+        "Layout", "Nagar", "Marg", "Highway", "Hwy", "Terrace",
+    )
+    address_base_confidence: float = 0.6
+    address_house_bonus: float = 0.15
+    address_tail_bonus: float = 0.10
+    address_cue_bonus: float = 0.15
 
     @classmethod
     def from_mapping(cls, data: Optional[Mapping[str, Any]]) -> "P4Config":
@@ -73,4 +84,6 @@ class P4Config:
         values = dict(data)
         if "priority_sections" in values:
             values["priority_sections"] = tuple(values["priority_sections"])
+        if "address_street_suffixes" in values:
+            values["address_street_suffixes"] = tuple(values["address_street_suffixes"])
         return cls(**values)

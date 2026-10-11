@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from src.models.text_block import TextBlock
+from src.pii.address import find_addresses
 from src.pii.backends import NERBackend, load_backends
 from src.pii.config import P4Config
 from src.pii.contracts import DETECTORS, PII_TYPES, Finding, ignore_spans, overlaps_ignore
@@ -63,7 +64,7 @@ def _ner_candidates(
     candidates: List[Finding] = []
     for block in blocks:
         text = block.text or ""
-        if not text.strip() or not backends:
+        if not text.strip():
             continue
 
         raw = []
@@ -72,12 +73,31 @@ def _ner_candidates(
                 raw.extend(backend.predict(text))
             except Exception as exc:  # noqa: BLE001 - one backend failing must not stop the rest
                 warnings.append(f"NER backend '{backend.name}' failed on block {block.block_id}: {exc}")
-        if not raw:
-            continue
+        # LOCATION is a place cue. It only extends address matches and is never a PII candidate.
+        places = [(r.start, r.end) for r in raw if r.label == "LOCATION"]
+        raw = [r for r in raw if r.label != "LOCATION"]
 
         spans_to_ignore = ignore_spans(text)
         weight = block_weight(block, config)
         priority = in_priority_section(block, config)
+
+        # Deterministic address pattern. It runs even with no NER backend.
+        for address in find_addresses(text, places, config):
+            if overlaps_ignore(address.start, address.end, spans_to_ignore):
+                continue
+            confidence = address.confidence * weight + (config.priority_boost if priority else 0.0)
+            candidates.append(
+                Finding.from_block(
+                    block,
+                    address.start,
+                    address.end,
+                    "ADDRESS",
+                    "ner",
+                    round(min(1.0, confidence), 4),
+                    ["p4:address_pattern"],
+                    owner="p4",
+                )
+            )
 
         for entity in raw:
             if overlaps_ignore(entity.start, entity.end, spans_to_ignore):

@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 PRESIDIO_LABELS: Dict[str, str] = {
     "PERSON": "PERSON",
     "ORGANIZATION": "ORG",
-    "LOCATION": "ADDRESS",
+    # LOCATION is a place cue, not a PII type: P4 uses it only to extend an address
+    # pattern match. A bare city or country is never emitted as ADDRESS.
+    "LOCATION": "LOCATION",
     "EMAIL_ADDRESS": "EMAIL",
     "PHONE_NUMBER": "PHONE",
     "US_SSN": "SSN",
@@ -33,9 +35,6 @@ PRESIDIO_LABELS: Dict[str, str] = {
 # Presidio entities that come from spaCy NER rather than pattern recognizers.
 PRESIDIO_NLP_ENTITIES = ("PERSON", "ORGANIZATION", "LOCATION")
 
-# A location is a city or country far more often than a postal address, so its
-# score is discounted before it is treated as ADDRESS.
-LOCATION_SCORE_FACTOR = 0.5
 
 GLINER_LABELS: Dict[str, str] = {
     "person": "PERSON",
@@ -155,8 +154,6 @@ class SpacyPresidioBackend:
             if label is None:
                 continue
             score = float(result.score)
-            if result.entity_type == "LOCATION":
-                score *= LOCATION_SCORE_FACTOR
             out.append(
                 RawEntity(
                     start=int(result.start),

@@ -292,11 +292,10 @@ def render_markdown(modes: List[Dict], address: Optional[Dict], truth: GroundTru
     if address is not None:
         lines += ["## ADDRESS diagnostics (spaCy only)", ""]
         lines.append(
-            "How spaCy handles ADDRESS: Presidio's spaCy recogniser tags LOCATION spans. The backend maps LOCATION "
-            "to ADDRESS and multiplies the score by 0.5, because cities and countries are not postal addresses. "
-            "A typical LOCATION score (0.85) therefore becomes 0.425, which is below the default threshold of 0.5, "
-            "so it is dropped. In the sample, spaCy tags only the city or a street fragment, never the whole "
-            "address, so exact recall stays at zero even when the threshold is lowered."
+            "How ADDRESS is found: a deterministic street pattern (house number, capitalised name, street suffix, "
+            "optional locality and city; see src/pii/address.py), with spaCy LOCATION spans used only to extend "
+            "a match. spaCy LOCATION is never emitted as ADDRESS on its own. The rows below sweep the confidence "
+            "threshold over the same candidates."
         )
         lines += ["", "| Threshold | Exact recall (scoring rule) | Overlap recall (any part found) | Matched | Overlapped | Predicted | Truth | Exact precision |", "|---|---|---|---|---|---|---|---|"]
         for threshold, row in address["by_threshold"].items():
@@ -304,7 +303,7 @@ def render_markdown(modes: List[Dict], address: Optional[Dict], truth: GroundTru
                 f"| {threshold} | {_pct(row['exact_recall'])} | {_pct(row['overlap_recall'])} | {row['matched']} | "
                 f"{row['overlapped']} | {row['predicted']} | {row['truth']} | {_pct(row['exact_precision'])} |"
             )
-        lines += ["", f"Misses at the default threshold (0.5), out of {address['truth']} ADDRESS labels:", ""]
+        lines += ["", f"Misses at the default threshold (0.5), out of {address['truth']} ADDRESS labels (empty means none):", ""]
         for miss in address["misses_at_default"]:
             spacy = (
                 "; ".join(f"{h['text']!r} label {h['label']} raw {h['raw_score']}" for h in miss["spacy_spans_overlapping"])

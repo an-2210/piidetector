@@ -43,11 +43,21 @@ def _overlaps(a: Finding, b: Finding) -> bool:
 
 
 def _rank(finding: Finding) -> int:
-    """Lower ranks win overlap contests. See the module docstring for the order."""
-    structured = finding.pii_type not in NER_PREFERRED_TYPES
+    """Lower ranks win overlap contests. See the module docstring for the order.
+
+    0  rule finding that is authoritative: P3-owned (labelled field or structured type)
+    1  P4 pattern address (has a house number, cue, or city tail)
+    2  NER finding for PERSON / ORG / ADDRESS
+    3  rule finding for PERSON / ORG / ADDRESS without an owner claim
+    4  NER finding for a structured type
+    """
     if finding.detector == "rule":
-        return 0 if structured else 2
-    return 3 if structured else 1
+        if finding.owner == "p3" or finding.pii_type not in NER_PREFERRED_TYPES:
+            return 0
+        return 3
+    if finding.owner == "p4" and finding.pii_type == "ADDRESS":
+        return 1
+    return 2 if finding.pii_type in NER_PREFERRED_TYPES else 4
 
 
 def _candidate_order(finding: Finding) -> Tuple:
