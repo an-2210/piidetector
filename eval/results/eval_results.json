@@ -18,36 +18,37 @@
         "roster_table.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "scanned_intake.pdf: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "scanned_intake.pdf: P4 identity conflict: EMAIL michael.achebe@northwind-logistics.com co-occurs with 2 different people; left unlinked",
+        "structured_conflicts.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "NER backend 'gliner' skipped: gliner is not installed (pip install gliner)"
       ],
       "scores": {
         "overall": {
-          "tp": 38,
-          "fp": 3,
-          "fn": 1,
-          "precision": 0.926829268292683,
-          "recall": 0.9743589743589743,
-          "f1": 0.9500000000000001
+          "tp": 43,
+          "fp": 6,
+          "fn": 11,
+          "precision": 0.8775510204081632,
+          "recall": 0.7962962962962963,
+          "f1": 0.8349514563106796
         },
         "per_type": {
           "PERSON": {
-            "tp": 10,
-            "fp": 1,
+            "tp": 12,
+            "fp": 2,
             "fn": 1,
-            "precision": 0.9090909090909091,
-            "recall": 0.9090909090909091,
-            "f1": 0.9090909090909091
+            "precision": 0.8571428571428571,
+            "recall": 0.9230769230769231,
+            "f1": 0.888888888888889
           },
           "ORG": {
             "tp": 6,
-            "fp": 2,
+            "fp": 4,
             "fn": 0,
-            "precision": 0.75,
+            "precision": 0.6,
             "recall": 1.0,
-            "f1": 0.8571428571428571
+            "f1": 0.7499999999999999
           },
           "ADDRESS": {
-            "tp": 7,
+            "tp": 8,
             "fp": 0,
             "fn": 0,
             "precision": 1.0,
@@ -55,7 +56,7 @@
             "f1": 1.0
           },
           "EMAIL": {
-            "tp": 8,
+            "tp": 10,
             "fp": 0,
             "fn": 0,
             "precision": 1.0,
@@ -69,16 +70,96 @@
             "precision": 1.0,
             "recall": 1.0,
             "f1": 1.0
+          },
+          "DIR_ID": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "MER_IN_ID": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "MER_PH_ID": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "SSN": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "PAN": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "PESEL": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "TIN": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "CARD_LAST4": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "ACCOUNT_LAST4": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
+          },
+          "DOB": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0.0,
+            "f1": null
           }
         },
         "per_source": {
           "body": {
-            "tp": 14,
-            "fp": 1,
-            "fn": 0,
-            "precision": 0.9333333333333333,
-            "recall": 1.0,
-            "f1": 0.9655172413793104
+            "tp": 19,
+            "fp": 4,
+            "fn": 10,
+            "precision": 0.8260869565217391,
+            "recall": 0.6551724137931034,
+            "f1": 0.7307692307692308
           },
           "table": {
             "tp": 13,
@@ -108,21 +189,21 @@
         "decoy_false_positives": 0,
         "decoy_hits": [],
         "identity": {
-          "pred_pairs": 21,
+          "pred_pairs": 32,
           "correct_pred_pairs": 8,
-          "truth_pairs": 19,
+          "truth_pairs": 27,
           "linked_truth_pairs": 8,
-          "precision": 0.38095238095238093,
-          "recall": 0.42105263157894735
+          "precision": 0.25,
+          "recall": 0.2962962962962963
         }
       },
       "identity": {
-        "pred_pairs": 18,
-        "correct_pred_pairs": 18,
-        "truth_pairs": 19,
-        "linked_truth_pairs": 18,
+        "pred_pairs": 25,
+        "correct_pred_pairs": 25,
+        "truth_pairs": 27,
+        "linked_truth_pairs": 25,
         "precision": 1.0,
-        "recall": 0.9473684210526315
+        "recall": 0.9259259259259259
       },
       "misses": [
         {
@@ -131,6 +212,76 @@
           "source_kind": "table",
           "pii_type": "PERSON",
           "text": "Grace Achebe"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "TIN",
+          "text": "12-3456789"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "SSN",
+          "text": "123-45-6789"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "DOB",
+          "text": "14/03/1988"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "PAN",
+          "text": "4111 1111 1111 1111"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "CARD_LAST4",
+          "text": "4421"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "PESEL",
+          "text": "80010112345"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "ACCOUNT_LAST4",
+          "text": "9087"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "DIR_ID",
+          "text": "DIR-88421"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "MER_IN_ID",
+          "text": "MER-IN-449120"
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "MER_PH_ID",
+          "text": "MER-PH-220011"
         }
       ],
       "false_positives": [
@@ -163,6 +314,39 @@
           "pii_type": "PERSON",
           "text": "Email",
           "confidence": 0.68,
+          "sources": [
+            "ner:spacy"
+          ]
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "ORG",
+          "text": "Audit",
+          "confidence": 0.85,
+          "sources": [
+            "ner:spacy"
+          ]
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "PERSON",
+          "text": "Email",
+          "confidence": 0.85,
+          "sources": [
+            "ner:spacy"
+          ]
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "ORG",
+          "text": "SSN",
+          "confidence": 0.85,
           "sources": [
             "ner:spacy"
           ]
@@ -187,36 +371,37 @@
         "roster_table.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "scanned_intake.pdf: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "scanned_intake.pdf: P4 identity conflict: EMAIL michael.achebe@northwind-logistics.com co-occurs with 2 different people; left unlinked",
+        "structured_conflicts.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "NER backend 'gliner' skipped: gliner is not installed (pip install gliner)"
       ],
       "scores": {
         "overall": {
-          "tp": 38,
-          "fp": 3,
+          "tp": 53,
+          "fp": 6,
           "fn": 1,
-          "precision": 0.926829268292683,
-          "recall": 0.9743589743589743,
-          "f1": 0.9500000000000001
+          "precision": 0.8983050847457628,
+          "recall": 0.9814814814814815,
+          "f1": 0.9380530973451328
         },
         "per_type": {
           "PERSON": {
-            "tp": 10,
-            "fp": 1,
+            "tp": 12,
+            "fp": 2,
             "fn": 1,
-            "precision": 0.9090909090909091,
-            "recall": 0.9090909090909091,
-            "f1": 0.9090909090909091
+            "precision": 0.8571428571428571,
+            "recall": 0.9230769230769231,
+            "f1": 0.888888888888889
           },
           "ORG": {
             "tp": 6,
-            "fp": 2,
+            "fp": 4,
             "fn": 0,
-            "precision": 0.75,
+            "precision": 0.6,
             "recall": 1.0,
-            "f1": 0.8571428571428571
+            "f1": 0.7499999999999999
           },
           "ADDRESS": {
-            "tp": 7,
+            "tp": 8,
             "fp": 0,
             "fn": 0,
             "precision": 1.0,
@@ -224,7 +409,7 @@
             "f1": 1.0
           },
           "EMAIL": {
-            "tp": 8,
+            "tp": 10,
             "fp": 0,
             "fn": 0,
             "precision": 1.0,
@@ -238,16 +423,96 @@
             "precision": 1.0,
             "recall": 1.0,
             "f1": 1.0
+          },
+          "DIR_ID": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "MER_IN_ID": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "MER_PH_ID": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "SSN": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "PAN": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "PESEL": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "TIN": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "CARD_LAST4": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "ACCOUNT_LAST4": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "DOB": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
           }
         },
         "per_source": {
           "body": {
-            "tp": 14,
-            "fp": 1,
+            "tp": 29,
+            "fp": 4,
             "fn": 0,
-            "precision": 0.9333333333333333,
+            "precision": 0.8787878787878788,
             "recall": 1.0,
-            "f1": 0.9655172413793104
+            "f1": 0.9354838709677419
           },
           "table": {
             "tp": 13,
@@ -277,21 +542,21 @@
         "decoy_false_positives": 0,
         "decoy_hits": [],
         "identity": {
-          "pred_pairs": 21,
+          "pred_pairs": 32,
           "correct_pred_pairs": 8,
-          "truth_pairs": 19,
+          "truth_pairs": 27,
           "linked_truth_pairs": 8,
-          "precision": 0.38095238095238093,
-          "recall": 0.42105263157894735
+          "precision": 0.25,
+          "recall": 0.2962962962962963
         }
       },
       "identity": {
-        "pred_pairs": 18,
-        "correct_pred_pairs": 18,
-        "truth_pairs": 19,
-        "linked_truth_pairs": 18,
+        "pred_pairs": 25,
+        "correct_pred_pairs": 25,
+        "truth_pairs": 27,
+        "linked_truth_pairs": 25,
         "precision": 1.0,
-        "recall": 0.9473684210526315
+        "recall": 0.9259259259259259
       },
       "misses": [
         {
@@ -335,6 +600,39 @@
           "sources": [
             "ner:spacy"
           ]
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "ORG",
+          "text": "Audit",
+          "confidence": 0.85,
+          "sources": [
+            "ner:spacy"
+          ]
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "PERSON",
+          "text": "Email",
+          "confidence": 0.85,
+          "sources": [
+            "ner:spacy"
+          ]
+        },
+        {
+          "file": "structured_conflicts.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "ORG",
+          "text": "SSN",
+          "confidence": 0.85,
+          "sources": [
+            "ner:spacy"
+          ]
         }
       ]
     }
@@ -345,31 +643,31 @@
         "exact_recall": 1.0,
         "overlap_recall": 1.0,
         "exact_precision": 1.0,
-        "matched": 7,
-        "overlapped": 7,
-        "predicted": 7,
-        "truth": 7
+        "matched": 8,
+        "overlapped": 8,
+        "predicted": 8,
+        "truth": 8
       },
       "0.3": {
         "exact_recall": 1.0,
         "overlap_recall": 1.0,
         "exact_precision": 1.0,
-        "matched": 7,
-        "overlapped": 7,
-        "predicted": 7,
-        "truth": 7
+        "matched": 8,
+        "overlapped": 8,
+        "predicted": 8,
+        "truth": 8
       },
       "0.1": {
         "exact_recall": 1.0,
         "overlap_recall": 1.0,
         "exact_precision": 1.0,
-        "matched": 7,
-        "overlapped": 7,
-        "predicted": 7,
-        "truth": 7
+        "matched": 8,
+        "overlapped": 8,
+        "predicted": 8,
+        "truth": 8
       }
     },
-    "truth": 7,
+    "truth": 8,
     "misses_at_default": [],
     "spacy_address_spans": []
   }

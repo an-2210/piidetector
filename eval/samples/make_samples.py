@@ -84,6 +84,25 @@ def make_briefing_pptx() -> None:
     presentation.save(str(HERE / "briefing.pptx"))
 
 
+def make_structured_conflicts_docx() -> None:
+    """Structured identifiers (what P3 owns) and deliberate overlaps for fusion."""
+    document = docx.Document()
+    document.add_heading("Case annex: identifiers and conflicts", level=1)
+    lines = [
+        "Applicant: Michael T. Achebe reviewed the case with the board.",
+        "Applicant: Grace Achebe, Head of Audit, approved the exception.",
+        "Home address: 9 Marina Road, Ikoyi.",
+        "Email: priya.raman@globex-ltd.com",
+        "Follow-up was sent to priya.raman@globex-ltd.com for the Lagos office details.",
+        "SSN: 123-45-6789 is on file. Card ending 4421 and account ending 9087 were flagged.",
+        "PAN 4111 1111 1111 1111 was declined. PESEL: 80010112345. TIN: 12-3456789. DOB: 14/03/1988.",
+        "Directory ID DIR-88421 and merchant IDs MER-IN-449120 and MER-PH-220011 were linked.",
+    ]
+    for line in lines:
+        document.add_paragraph(line)
+    document.save(str(HERE / "structured_conflicts.docx"))
+
+
 def _render_scan_page() -> bytes:
     """Render text as a JPEG scan, so the PDF has no text layer and P2 must OCR it."""
     lines = [
@@ -121,5 +140,6 @@ if __name__ == "__main__":
     make_roster_docx()
     make_briefing_pptx()
     make_scanned_pdf()
-    for name in ("prose_case.docx", "roster_table.docx", "briefing.pptx", "scanned_intake.pdf"):
+    make_structured_conflicts_docx()
+    for name in ("prose_case.docx", "roster_table.docx", "briefing.pptx", "scanned_intake.pdf", "structured_conflicts.docx"):
         print("wrote", name, (HERE / name).stat().st_size, "bytes")

@@ -288,6 +288,113 @@
       "source_kind": "image_ocr",
       "text": "Acme Corp",
       "pii_type": "ORG"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Michael T. Achebe",
+      "pii_type": "PERSON",
+      "identity": "A"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Grace Achebe",
+      "pii_type": "PERSON",
+      "identity": "C"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "9 Marina Road, Ikoyi",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "priya.raman@globex-ltd.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "priya.raman@globex-ltd.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "123-45-6789",
+      "pii_type": "SSN"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "4421",
+      "pii_type": "CARD_LAST4"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "9087",
+      "pii_type": "ACCOUNT_LAST4"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "4111 1111 1111 1111",
+      "pii_type": "PAN"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "80010112345",
+      "pii_type": "PESEL"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "12-3456789",
+      "pii_type": "TIN"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "14/03/1988",
+      "pii_type": "DOB"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "DIR-88421",
+      "pii_type": "DIR_ID"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "MER-IN-449120",
+      "pii_type": "MER_IN_ID"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "MER-PH-220011",
+      "pii_type": "MER_PH_ID"
     }
   ],
   "decoys": [
@@ -344,6 +451,12 @@
       "page": 1,
       "text": "01/04/2025",
       "kind": "policy_date"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "text": "RSK-2024-0031",
+      "kind": "rsk_ref"
     }
   ]
 }

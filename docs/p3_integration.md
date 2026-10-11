@@ -19,6 +19,16 @@ Return a list of `src.pii.contracts.Finding` objects from `detect(blocks)`:
 
 `identity_id` is left as `None`. P4 sets it.
 
+## Ownership: `owner="p3"` for labelled fields
+
+Set `owner="p3"` on every finding you emit. It means P3 is authoritative for that span:
+
+- **Labelled fields** ("Applicant: …", "Home address: …", "Employee: …"): these override NER on overlap, including NER's type. A labelled PERSON beats an overlapping spaCy ORG, and a labelled ADDRESS beats any NER or pattern address.
+- **Structured types** (EMAIL, SSN, PAN, …): these win over any overlapping NER span regardless of owner.
+- **Without an owner** (`None`): the default type rules apply. NER wins PERSON, ORG and ADDRESS overlaps, and the rule's sources are kept as agreement.
+
+P4 owns addresses that have no P3 claim. Its pattern addresses have `owner="p4"` and only fill gaps in prose. If P3 emits ADDRESS for a labelled field, P4 does not override it.
+
 ## Label vocabulary
 
 `PII_TYPES`: PERSON, ORG, ADDRESS, EMAIL, PHONE, EMP_ID, DIR_ID, MER_IN_ID, MER_PH_ID, SSN, PAN, PASSPORT, PESEL, TIN, CARD_LAST4, ACCOUNT_LAST4, DOB.
