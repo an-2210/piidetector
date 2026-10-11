@@ -12,9 +12,7 @@ import pytest
 
 from src.models.text_block import ExtractionResult
 from src.pii import registry
-from src.pii.config import P4Config
 from src.pii.contracts import Finding, validate_finding_dict
-from src.pii.hook import run_ner_stage
 from src.pii.p4 import run_p4_report
 from src.pipeline import extract_document
 
