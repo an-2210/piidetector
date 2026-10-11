@@ -43,12 +43,24 @@ Identity IDs are `PERSON_1`, `PERSON_2`, … ordered by canonical name, then fir
 
 ## Metrics
 
-**No precision or recall numbers are reported.** The repository has no ground-truth file, and the case document referenced in the brief (§16.5, §16.8) is not in the repo. Any figure would be invented.
+Measured on a hand-labelled synthetic set: 4 files (DOCX prose, DOCX table, PPTX, image-only scanned PDF), 39 labels, 9 decoys. Run with `.venv/bin/python eval/run_eval.py`. Full tables are in `eval/results/eval_report.md`.
 
-What has been measured:
+| Mode | Precision | Recall | F1 |
+|---|---|---|---|
+| NER only (spaCy; Presidio structured types and internal extractor on) | 81.6% | 79.5% | 80.5% |
+| NER + mock P3 (regex EMAIL/EMP_ID as rule findings) | 81.6% | 79.5% | 80.5% |
+| NER + real P3 | not run: no P3 detector is registered yet | | |
 
-- **Unit and integration tests:** 88 passing in the project virtualenv (with spaCy and Presidio) and 87 passing with system Python, plus one real-model test that only runs when the models are installed. The 30 original tests still pass.
-- **Real output on a synthetic case document** (one 16.5 paragraph, one table, one 16.8 paragraph): prose and table mentions of the same person resolve to one identity, linked to two email addresses and an EMP ID. Organisations (Globex Ltd, Acme Corp) are labelled ORG, and reference IDs and USD amounts are not emitted.
+- **By type (NER + mock P3):** PERSON 90.9% F1, EMAIL 100%, EMP_ID 100%, ORG 66.7% (precision 50%: street names and "Audit" come out as ORG), ADDRESS 0% recall.
+- **By source:** body 85.7% F1, table 74.1%, slide 83.3%, scanned image OCR 80.0%.
+- **Identity (corpus run, pairwise):** precision 100% (18 of 18 predicted pairs), recall 94.7% (18 of 19). The one missed pair comes from a table mention that NER did not catch.
+- **Decoys:** 0 decoy false positives. These samples do not stress this much, because spaCy rarely tags reference IDs or amounts anyway.
+- **Mock P3 vs NER only:** identical here, because the mock and the internal extractor find the same EMAIL and EMP_ID spans. This does not show what a real P3 would add.
+- **GLiNER:** not installed, so it was not run.
+
+**Address recall** is the weak point; see the diagnostics section of the report. spaCy tags LOCATION, which P4 maps to ADDRESS at half score (0.425), below the 0.5 threshold, so it is dropped by default. Exact recall is 0% at every threshold. Overlap recall (any part of an address found) reaches 85.7% at threshold 0.3, but most of those hits are a city or a street fragment, so they would not count as a correct address.
+
+Caveats on these numbers: the samples are small (39 labels), synthetic and hand-labelled by the same person who wrote the pipeline. A single missed label moves recall by about 2.5 points. Treat them as a baseline for regression, not as a production accuracy estimate.
 
 ## Limitations
 
@@ -63,4 +75,5 @@ What has been measured:
 1. Make `TextBlock.block_id` deterministic (for example `uuid5(source_file, reading_order)`). This needs a P1 change and approval.
 2. Confirm the §16.5 and §16.8 heading format in the case document, so the priority boost matches real headings.
 3. Provide a labelled sample set (ground truth) so P4 precision and recall can be measured per type and per source (body, table, slide, image_ocr).
-4. Decide whether to keep GLiNER (large dependency) or rely on Presidio + spaCy only.
+4. Decide whether to keep GLiNER (large dependency) or rely on Presidio + spaCy only. Address recall is the case for it, but it is untested here.
+5. Get a real labelled set (ground truth from real case documents) so these numbers mean something beyond this sample.
