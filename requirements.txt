@@ -6,6 +6,3 @@ pillow>=10.0.0
 
 # Testing and Validation
 pytest>=8.0.0
-opencv-python
-numpy
-pytesseract

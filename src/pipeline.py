@@ -26,7 +26,17 @@ EXTRACTOR_REGISTRY: Dict[str, Type[BaseExtractor]] = {
 def get_extractor_for_file(
     file_path: Union[str, Path],
 ) -> BaseExtractor:
-    """Resolve the appropriate native extractor."""
+    """Resolve and instantiate the appropriate extractor.
+
+    Args:
+        file_path: Path to the target document.
+
+    Returns:
+        An instance of the appropriate BaseExtractor.
+
+    Raises:
+        ValueError: If the file format is unsupported.
+    """
     path = Path(file_path)
     ext = path.suffix.lower()
     extractor_cls = EXTRACTOR_REGISTRY.get(ext)
@@ -45,31 +55,47 @@ def extract_document(
     file_path: Union[str, Path],
     **options: Any,
 ) -> ExtractionResult:
-    """Extract document content using P1, optionally followed by P2 OCR.
+    """Extract a document using P1, optionally followed by P2 OCR.
 
-    OCR is disabled by default to preserve existing P1 behavior.
+    By default, this function performs native extraction only, preserving
+    the existing P1 behavior.
 
-    OCR options:
-        enable_ocr: Enable P2 OCR. Defaults to False.
-        ocr_confidence_threshold: Minimum OCR confidence (0-100).
-        ocr_render_dpi: DPI for rendering PDF pages.
-        ocr_upscale_factor: Image preprocessing scale factor.
+    Set enable_ocr=True to run P2 OCR after native extraction. OCR results
+    are merged into the same ExtractionResult.
 
-    Remaining options are passed to the native extractor.
+    OCR-specific options:
+        enable_ocr: Enable the P2 OCR pipeline. Defaults to False.
+        ocr_confidence_threshold: Minimum OCR confidence, from 0 to 100.
+        ocr_render_dpi: DPI used when rendering PDF pages.
+        ocr_upscale_factor: Image preprocessing upscale factor.
+
+    Other options are passed to the native document extractor.
+
+    Returns:
+        ExtractionResult containing extracted TextBlocks, OCR handoff
+        flags, source metadata, and any extraction errors.
     """
+    # Separate P2 options so they are not accidentally passed to P1.
     extractor_options = dict(options)
 
     enable_ocr = extractor_options.pop("enable_ocr", False)
-    confidence_threshold = extractor_options.pop(
+    ocr_confidence_threshold = extractor_options.pop(
         "ocr_confidence_threshold", 30.0
     )
-    render_dpi = extractor_options.pop("ocr_render_dpi", 200)
-    upscale_factor = extractor_options.pop("ocr_upscale_factor", 1.5)
+    ocr_render_dpi = extractor_options.pop("ocr_render_dpi", 200)
+    ocr_upscale_factor = extractor_options.pop(
+        "ocr_upscale_factor", 1.5
+    )
 
+    # Validate the file path.
     try:
         path = validate_file_path(file_path)
     except Exception as exc:
-        logger.error("File validation failed for '%s': %s", file_path, exc)
+        logger.error(
+            "File validation failed for '%s': %s",
+            file_path,
+            exc,
+        )
         filename = Path(file_path).name if file_path else "unknown"
         result = ExtractionResult(
             source_file=filename,
@@ -78,11 +104,14 @@ def extract_document(
         result.errors.append(str(exc))
         return result
 
+    # Resolve the native extractor.
     try:
         extractor = get_extractor_for_file(path)
     except ValueError as exc:
         logger.error(
-            "Unsupported file format for '%s': %s", path.name, exc
+            "Unsupported file format for '%s': %s",
+            path.name,
+            exc,
         )
         result = ExtractionResult(
             source_file=path.name,
@@ -91,10 +120,14 @@ def extract_document(
         result.errors.append(str(exc))
         return result
 
+    # Run P1 native extraction first.
     try:
         result = extractor.extract(path, **extractor_options)
     except Exception as exc:
-        logger.exception("Unexpected error extracting '%s'", path.name)
+        logger.exception(
+            "Unexpected error extracting '%s'",
+            path.name,
+        )
         result = ExtractionResult(
             source_file=path.name,
             source_type=path.suffix.upper().lstrip("."),
@@ -102,6 +135,7 @@ def extract_document(
         result.errors.append(f"Extraction failed: {exc}")
         return result
 
+    # Optionally run P2 OCR and merge its blocks with P1's blocks.
     if enable_ocr:
         try:
             from src.ocr.pipeline import run_ocr_pipeline
@@ -109,12 +143,15 @@ def extract_document(
             result = run_ocr_pipeline(
                 file_path=path,
                 extraction_result=result,
-                confidence_threshold=confidence_threshold,
-                render_dpi=render_dpi,
-                upscale_factor=upscale_factor,
+                confidence_threshold=ocr_confidence_threshold,
+                render_dpi=ocr_render_dpi,
+                upscale_factor=ocr_upscale_factor,
             )
         except Exception as exc:
-            logger.exception("P2 OCR failed for '%s'", path.name)
+            logger.exception(
+                "P2 OCR failed for '%s'",
+                path.name,
+            )
             result.errors.append(f"P2 OCR failed: {exc}")
 
     return result
