@@ -59,7 +59,7 @@ Measured with `eval/run_eval.py` on 6 synthetic documents: 57 positive labels an
 | NER only | 95.9 / 82.5 / 88.7 | 95.2 / 70.2 / 80.8 |
 | NER + mock P3 | 96.6 / 100.0 / 98.3 | 96.2 / 87.7 / 91.7 |
 
-Before this branch's address and ORG work, NER-only overall was 74.0 / 64.9 / 69.2. ADDRESS went from 0% to 100% recall and precision. ORG precision went from 41.2% to 100%. PERSON recall went from 92.9% to 100%.
+Before the address pattern (commit 3a1abfb, same ground truth), NER-only overall was 74.0 / 64.9 / 69.2. ADDRESS went from 0% to 100% recall and precision. ORG precision went from 41.2% to 100%. PERSON recall went from 92.9% to 100%.
 
 **Caveat: these samples are self-labelled.** The same person wrote the pipeline, the samples, the labels, the ORG filter lists and the address pattern. The numbers are a regression baseline. They do not estimate accuracy on real case documents. The only out-of-sample signal is the decoy memo, which has no address-shaped negatives.
 
