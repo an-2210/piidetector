@@ -35,6 +35,17 @@ def clear_registered_detectors() -> None:
     _registered.clear()
 
 
+def rule_detector_available() -> bool:
+    """True when a P3 detector is registered or importable. Does not run it."""
+    if _registered:
+        return True
+    try:
+        module = importlib.import_module(RULE_DETECTOR_MODULE)
+    except ImportError:
+        return False
+    return callable(getattr(module, "get_detector", None))
+
+
 def _discover(warnings: List[str]) -> List[RuleDetector]:
     detectors: List[RuleDetector] = list(_registered)
     try:

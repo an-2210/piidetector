@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "P4 evaluation ground truth",
+  "description": "Hand-labelled PII for the evaluation set. Matching never uses block_id (uuid4 per run). A prediction matches a label when file, location, pii_type and normalised text agree, and, when the label has a span, the IoU of the spans is at least 0.5. Spans are offsets into the document text for (file, location): the blocks of that file and location joined by newlines, in reading order.",
+  "type": "object",
+  "required": ["schema_version", "labels"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "labels": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/label"}
+    },
+    "decoys": {
+      "type": "array",
+      "description": "Text that looks like PII but is not. Any prediction whose normalised text contains a decoy counts as a decoy false positive.",
+      "items": {"$ref": "#/$defs/decoy"}
+    }
+  },
+  "$defs": {
+    "location": {
+      "description": "Page number for PDF, slide number for PPTX, null for DOCX.",
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "label": {
+      "type": "object",
+      "required": ["file", "page", "source_kind", "text", "pii_type"],
+      "additionalProperties": false,
+      "properties": {
+        "file": {"type": "string"},
+        "page": {"$ref": "#/$defs/location"},
+        "source_kind": {"enum": ["body", "table", "slide", "image_ocr"]},
+        "text": {"type": "string", "minLength": 1},
+        "pii_type": {
+          "enum": ["PERSON", "ORG", "ADDRESS", "EMAIL", "PHONE", "EMP_ID", "DIR_ID", "MER_IN_ID", "MER_PH_ID", "SSN", "PAN", "PASSPORT", "PESEL", "TIN", "CARD_LAST4", "ACCOUNT_LAST4", "DOB"]
+        },
+        "identity": {
+          "type": "string",
+          "description": "Optional group name. Mentions of the same person share a group. Only meaningful for PERSON."
+        },
+        "span": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0},
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Optional [start, end) offsets in the (file, location) joined text."
+        }
+      }
+    },
+    "decoy": {
+      "type": "object",
+      "required": ["file", "page", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "file": {"type": "string"},
+        "page": {"$ref": "#/$defs/location"},
+        "text": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["rsk_ref", "usd_amount", "policy_date", "other"]}
+      }
+    }
+  }
+}
