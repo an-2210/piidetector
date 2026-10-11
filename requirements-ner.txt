@@ -1,0 +1,17 @@
+# OPTIONAL dependencies for P4 (NER + fusion). Not needed for P1 or P2.
+# Without these, P4 still runs: it skips any missing backend, logs a warning,
+# and returns rule findings only. Nothing crashes.
+#
+# Install:  pip install -r requirements-ner.txt
+# Then the spaCy model (≈400 MB; kept out of pip on purpose):
+#           python -m spacy download en_core_web_lg
+#
+# presidio-analyzer and spaCy were installed and exercised on Python 3.14 (en_core_web_lg 3.8.0).
+# GLiNER resolves on the package index (0.2.29) but was NOT installed or run here:
+# its adapter is covered by fallback tests only.
+
+presidio-analyzer>=2.2.364   # optional: Presidio AnalyzerEngine over spaCy
+spacy>=3.8.16                 # optional: NLP backend for Presidio
+
+# optional: GLiNER zero-shot NER (pulls in torch, large download)
+gliner>=0.2.29
