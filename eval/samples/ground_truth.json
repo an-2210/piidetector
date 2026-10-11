@@ -395,6 +395,28 @@
       "source_kind": "body",
       "text": "MER-PH-220011",
       "pii_type": "MER_PH_ID"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Dana Holt",
+      "pii_type": "PERSON",
+      "identity": "D"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "22 Allen Avenue, Ikeja",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Achebe Holdings Ltd",
+      "pii_type": "ORG"
     }
   ],
   "decoys": [
@@ -453,10 +475,70 @@
       "kind": "policy_date"
     },
     {
-      "file": "structured_conflicts.docx",
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Risk Committee",
+      "kind": "committee_title"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Chief Risk Officer",
+      "kind": "title_role",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Achebe Holdings Ltd",
+      "kind": "org_contains_person",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Lagos office",
+      "kind": "place_non_address",
+      "not_type": "ADDRESS"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Several",
+      "kind": "sentence_start_word",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Following",
+      "kind": "sentence_start_word",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "March",
+      "kind": "month_name",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "GRP-POL-LAGOS-01",
+      "kind": "grp_ref"
+    },
+    {
+      "file": "decoys_memo.docx",
       "page": null,
       "text": "RSK-2024-0031",
       "kind": "rsk_ref"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "USD 18,000",
+      "kind": "usd_amount"
     }
   ]
 }

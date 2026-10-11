@@ -64,6 +64,24 @@ def document_offsets(blocks: Iterable[TextBlock]) -> Dict[str, Tuple[Tuple[str, 
     return bases
 
 
+def document_text(blocks: Iterable[TextBlock], file: str, location: Optional[int]) -> str:
+    """Joined text of one (file, location), in the coordinates used for spans."""
+    members = [b for b in blocks if b.source_file == file and location_of_block(b) == location]
+    return "\n".join(b.text or "" for b in sorted(members, key=lambda b: (b.reading_order, b.block_id)))
+
+
+def decoy_occurrences(text: str, decoy_text: str) -> List[Tuple[int, int]]:
+    """All case-insensitive occurrences of `decoy_text` in `text`, as [start, end)."""
+    needle = decoy_text.casefold()
+    haystack = text.casefold()
+    found: List[Tuple[int, int]] = []
+    index = haystack.find(needle)
+    while index >= 0:
+        found.append((index, index + len(needle)))
+        index = haystack.find(needle, index + 1)
+    return found
+
+
 def document_span(finding: Finding, bases: Dict[str, Tuple[Tuple[str, Optional[int]], int]]) -> Optional[Tuple[int, int]]:
     entry = bases.get(finding.block_id)
     if entry is None:
@@ -158,7 +176,12 @@ def prf(tp: int, fp: int, fn: int) -> Dict[str, Optional[float]]:
     return {"tp": tp, "fp": fp, "fn": fn, "precision": precision, "recall": recall, "f1": f1}
 
 
-def score(truth: GroundTruth, predictions: Sequence[Prediction], result: MatchResult) -> Dict:
+def score(
+    truth: GroundTruth,
+    predictions: Sequence[Prediction],
+    result: MatchResult,
+    blocks: Sequence[TextBlock] = (),
+) -> Dict:
     """Per-type, per-source, overall, decoy and identity scores for one run."""
     from src.pii.contracts import PII_TYPES
 
@@ -184,21 +207,47 @@ def score(truth: GroundTruth, predictions: Sequence[Prediction], result: MatchRe
         len(result.missed),
     )
 
-    decoy_hits = []
-    for decoy in truth.decoys:
-        needle = normalize_text(decoy.text)
-        for pred in predictions:
-            if pred.file == decoy.file and pred.location == decoy.page and needle and needle in pred.norm:
-                decoy_hits.append({"decoy": decoy.text, "pred": pred.finding.text, "type": pred.finding.pii_type})
+    decoy_hits, decoy_stats, not_found = decoy_scores(truth, predictions, blocks)
 
     return {
         "overall": overall,
         "per_type": per_type,
         "per_source": per_source,
-        "decoy_false_positives": len(decoy_hits),
-        "decoy_hits": decoy_hits,
+        "decoy_false_positives": len({id(h["pred"]) for h in decoy_hits}),
+        "decoy_by_kind": decoy_stats,
+        "decoy_hits": [{k: v for k, v in h.items() if k != "pred"} | {"pred_text": h["pred"].finding.text} for h in decoy_hits],
+        "decoy_text_not_found": not_found,
         "identity": identity_scores(result, predictions),
     }
+
+
+def decoy_scores(truth: GroundTruth, predictions: Sequence[Prediction], blocks: Sequence[TextBlock]):
+    """A prediction is a decoy false positive when its span overlaps a decoy occurrence.
+
+    If a decoy sets `not_type`, only predictions of that type count. Returns
+    (hits, per-kind stats, decoys whose text was not found in the document).
+    """
+    hits: List[Dict] = []
+    stats: Dict[str, Dict[str, int]] = {}
+    not_found: List[str] = []
+    for decoy in truth.decoys:
+        kind = stats.setdefault(decoy.kind, {"decoys": 0, "occurrences": 0, "false_positives": 0})
+        kind["decoys"] += 1
+        text = document_text(blocks, decoy.file, decoy.page)
+        occurrences = decoy_occurrences(text, decoy.text)
+        if not occurrences:
+            not_found.append(f"{decoy.file} p{decoy.page or '-'}: {decoy.text!r}")
+            continue
+        kind["occurrences"] += len(occurrences)
+        for pred in predictions:
+            if pred.file != decoy.file or pred.location != decoy.page or pred.span is None:
+                continue
+            if decoy.not_type is not None and pred.finding.pii_type != decoy.not_type:
+                continue
+            if any(pred.span[0] < end and start < pred.span[1] for start, end in occurrences):
+                hits.append({"decoy": decoy.text, "kind": decoy.kind, "pred": pred})
+                kind["false_positives"] += 1
+    return hits, stats, not_found
 
 
 def identity_scores(result: MatchResult, predictions: Sequence[Prediction]) -> Dict:

@@ -25,7 +25,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.ground_truth import GroundTruth, load_ground_truth  # noqa: E402
-from eval.metrics import build_predictions, identity_scores, location_of_block, match, score  # noqa: E402
+from eval.metrics import build_predictions, document_text, identity_scores, match, score  # noqa: E402
 from eval.mock_p3 import MockRegexP3  # noqa: E402
 from src.models.text_block import TextBlock  # noqa: E402
 from src.pii import registry  # noqa: E402
@@ -102,7 +102,7 @@ def run_mode(mode: str, truth: GroundTruth, sample_dir: Path) -> Dict:
 
     doc_preds = build_predictions(per_file_findings, blocks)
     doc_match = match(truth.labels, doc_preds)
-    doc_score = score(truth, doc_preds, doc_match)
+    doc_score = score(truth, doc_preds, doc_match, blocks)
 
     rule_findings = None
     if _uses_rules(mode):
@@ -132,12 +132,6 @@ def run_mode(mode: str, truth: GroundTruth, sample_dir: Path) -> Dict:
     }
 
 
-def _doc_text(blocks: List[TextBlock], file: str, location: Optional[int]) -> str:
-    """Joined text of one (file, location), in the same coordinates as eval.metrics spans."""
-    members = [b for b in blocks if b.source_file == file and location_of_block(b) == location]
-    return "\n".join(b.text or "" for b in sorted(members, key=lambda b: (b.reading_order, b.block_id)))
-
-
 def address_diagnostics(truth: GroundTruth, sample_dir: Path) -> Dict:
     """How ADDRESS behaves when spaCy is the only NER source, and where it misses.
 
@@ -156,7 +150,7 @@ def address_diagnostics(truth: GroundTruth, sample_dir: Path) -> Dict:
     addresses_truth = [g for g in truth.labels if g.pii_type == "ADDRESS"]
 
     def label_span(label) -> Optional[tuple]:
-        text = _doc_text(blocks, label.file, label.page)
+        text = document_text(blocks, label.file, label.page)
         index = text.find(label.text)
         return (index, index + len(label.text)) if index >= 0 else None
 
@@ -271,8 +265,16 @@ def render_markdown(modes: List[Dict], address: Optional[Dict], truth: GroundTru
         ident = mode["identity"]
         lines += [
             "",
-            f"Decoy false positives: {s['decoy_false_positives']}.",
+            f"Decoy false positives: {s['decoy_false_positives']} (of {sum(k['occurrences'] for k in s['decoy_by_kind'].values())} decoy occurrences).",
             "",
+        ]
+        if s["decoy_by_kind"]:
+            lines += ["| Decoy category | Decoys | Occurrences | False positives |", "|---|---|---|---|"]
+            lines += [f"| {k} | {v['decoys']} | {v['occurrences']} | {v['false_positives']} |" for k, v in s["decoy_by_kind"].items()]
+            lines.append("")
+        if s["decoy_text_not_found"]:
+            lines += ["Decoy text not found in the document (fix the ground truth): " + "; ".join(s["decoy_text_not_found"]), ""]
+        lines += [
             f"Identity (pairwise, PERSON, corpus run): precision {_pct(ident['precision'])} "
             f"({ident['correct_pred_pairs']}/{ident['pred_pairs']} predicted pairs correct), "
             f"recall {_pct(ident['recall'])} ({ident['linked_truth_pairs']}/{ident['truth_pairs']} truth pairs linked).",

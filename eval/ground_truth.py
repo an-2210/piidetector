@@ -14,7 +14,10 @@ from typing import List, Optional, Tuple
 from src.pii.contracts import PII_TYPES
 
 SOURCE_KINDS = ("body", "table", "slide", "image_ocr")
-DECOY_KINDS = ("rsk_ref", "usd_amount", "policy_date", "other")
+DECOY_KINDS = (
+    "rsk_ref", "usd_amount", "policy_date", "grp_ref", "org_contains_person", "committee_title",
+    "title_role", "sentence_start_word", "month_name", "place_non_address", "other",
+)
 
 
 class GroundTruthError(ValueError):
@@ -38,6 +41,7 @@ class GTDecoy:
     page: Optional[int]
     text: str
     kind: str = "other"
+    not_type: Optional[str] = None
 
 
 @dataclass
@@ -100,14 +104,21 @@ def _parse_decoy(raw: dict, where: str) -> GTDecoy:
     for key in ("file", "page", "text"):
         if key not in raw:
             raise GroundTruthError(f"{where}: missing '{key}'")
+    unknown = set(raw) - {"file", "page", "text", "kind", "not_type"}
+    if unknown:
+        raise GroundTruthError(f"{where}: unknown keys {sorted(unknown)}")
     kind = raw.get("kind", "other")
     if kind not in DECOY_KINDS:
         raise GroundTruthError(f"{where}: kind {kind!r} must be one of {DECOY_KINDS}")
+    not_type = raw.get("not_type")
+    if not_type is not None and not_type not in PII_TYPES:
+        raise GroundTruthError(f"{where}: not_type {not_type!r} is not in PII_TYPES")
     return GTDecoy(
         file=raw["file"],
         page=_check_location(raw["page"], where),
         text=raw["text"],
         kind=kind,
+        not_type=not_type,
     )
 
 

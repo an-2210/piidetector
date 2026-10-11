@@ -103,6 +103,22 @@ def make_structured_conflicts_docx() -> None:
     document.save(str(HERE / "structured_conflicts.docx"))
 
 
+def make_decoys_memo_docx() -> None:
+    """Negatives that look like PII, plus a few real positives so precision is measured."""
+    document = docx.Document()
+    document.add_heading("Risk Committee minutes", level=1)
+    lines = [
+        "Escalation went to the Risk Committee in March, after the review.",
+        "Dana Holt, Chief Risk Officer, approved the memo. Registered office: 22 Allen Avenue, Ikeja.",
+        "Achebe Holdings Ltd pays the fee for the Lagos office.",
+        "Several items were logged. Following the audit, Policy GRP-POL-LAGOS-01 applies.",
+        "In March 2026 the RSK-2024-0031 file was closed. The Monday review used USD 18,000.",
+    ]
+    for line in lines:
+        document.add_paragraph(line)
+    document.save(str(HERE / "decoys_memo.docx"))
+
+
 def _render_scan_page() -> bytes:
     """Render text as a JPEG scan, so the PDF has no text layer and P2 must OCR it."""
     lines = [
@@ -141,5 +157,6 @@ if __name__ == "__main__":
     make_briefing_pptx()
     make_scanned_pdf()
     make_structured_conflicts_docx()
-    for name in ("prose_case.docx", "roster_table.docx", "briefing.pptx", "scanned_intake.pdf", "structured_conflicts.docx"):
+    make_decoys_memo_docx()
+    for name in ("prose_case.docx", "roster_table.docx", "briefing.pptx", "scanned_intake.pdf", "structured_conflicts.docx", "decoys_memo.docx"):
         print("wrote", name, (HERE / name).stat().st_size, "bytes")

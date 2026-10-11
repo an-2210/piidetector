@@ -13,6 +13,7 @@
       ],
       "warnings": [
         "briefing.pptx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
+        "decoys_memo.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "prose_case.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "prose_case.docx: P4 identity conflict: EMAIL priya.raman@globex-ltd.com co-occurs with 2 different people; left unlinked",
         "roster_table.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
@@ -23,32 +24,32 @@
       ],
       "scores": {
         "overall": {
-          "tp": 43,
-          "fp": 6,
+          "tp": 46,
+          "fp": 7,
           "fn": 11,
-          "precision": 0.8775510204081632,
-          "recall": 0.7962962962962963,
-          "f1": 0.8349514563106796
+          "precision": 0.8679245283018868,
+          "recall": 0.8070175438596491,
+          "f1": 0.8363636363636363
         },
         "per_type": {
           "PERSON": {
-            "tp": 12,
+            "tp": 13,
             "fp": 2,
             "fn": 1,
-            "precision": 0.8571428571428571,
-            "recall": 0.9230769230769231,
-            "f1": 0.888888888888889
+            "precision": 0.8666666666666667,
+            "recall": 0.9285714285714286,
+            "f1": 0.896551724137931
           },
           "ORG": {
-            "tp": 6,
-            "fp": 4,
+            "tp": 7,
+            "fp": 5,
             "fn": 0,
-            "precision": 0.6,
+            "precision": 0.5833333333333334,
             "recall": 1.0,
-            "f1": 0.7499999999999999
+            "f1": 0.7368421052631579
           },
           "ADDRESS": {
-            "tp": 8,
+            "tp": 9,
             "fp": 0,
             "fn": 0,
             "precision": 1.0,
@@ -154,12 +155,12 @@
         },
         "per_source": {
           "body": {
-            "tp": 19,
-            "fp": 4,
+            "tp": 22,
+            "fp": 5,
             "fn": 10,
-            "precision": 0.8260869565217391,
-            "recall": 0.6551724137931034,
-            "f1": 0.7307692307692308
+            "precision": 0.8148148148148148,
+            "recall": 0.6875,
+            "f1": 0.7457627118644067
           },
           "table": {
             "tp": 13,
@@ -186,14 +187,73 @@
             "f1": 0.9090909090909091
           }
         },
-        "decoy_false_positives": 0,
-        "decoy_hits": [],
+        "decoy_false_positives": 1,
+        "decoy_by_kind": {
+          "rsk_ref": {
+            "decoys": 5,
+            "occurrences": 5,
+            "false_positives": 0
+          },
+          "usd_amount": {
+            "decoys": 4,
+            "occurrences": 4,
+            "false_positives": 0
+          },
+          "policy_date": {
+            "decoys": 2,
+            "occurrences": 2,
+            "false_positives": 0
+          },
+          "committee_title": {
+            "decoys": 1,
+            "occurrences": 2,
+            "false_positives": 1
+          },
+          "title_role": {
+            "decoys": 1,
+            "occurrences": 1,
+            "false_positives": 0
+          },
+          "org_contains_person": {
+            "decoys": 1,
+            "occurrences": 1,
+            "false_positives": 0
+          },
+          "place_non_address": {
+            "decoys": 1,
+            "occurrences": 1,
+            "false_positives": 0
+          },
+          "sentence_start_word": {
+            "decoys": 2,
+            "occurrences": 2,
+            "false_positives": 0
+          },
+          "month_name": {
+            "decoys": 1,
+            "occurrences": 2,
+            "false_positives": 0
+          },
+          "grp_ref": {
+            "decoys": 1,
+            "occurrences": 1,
+            "false_positives": 0
+          }
+        },
+        "decoy_hits": [
+          {
+            "decoy": "Risk Committee",
+            "kind": "committee_title",
+            "pred_text": "the Risk Committee"
+          }
+        ],
+        "decoy_text_not_found": [],
         "identity": {
-          "pred_pairs": 32,
+          "pred_pairs": 37,
           "correct_pred_pairs": 8,
           "truth_pairs": 27,
           "linked_truth_pairs": 8,
-          "precision": 0.25,
+          "precision": 0.21621621621621623,
           "recall": 0.2962962962962963
         }
       },
@@ -286,6 +346,17 @@
       ],
       "false_positives": [
         {
+          "file": "decoys_memo.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "ORG",
+          "text": "the Risk Committee",
+          "confidence": 0.85,
+          "sources": [
+            "ner:spacy"
+          ]
+        },
+        {
           "file": "prose_case.docx",
           "location": null,
           "source_kind": "body",
@@ -366,6 +437,7 @@
       ],
       "warnings": [
         "briefing.pptx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
+        "decoys_memo.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "prose_case.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
         "prose_case.docx: P4 identity conflict: EMAIL priya.raman@globex-ltd.com co-occurs with 2 different people; left unlinked",
         "roster_table.docx: P4 warning: NER backend 'gliner' skipped: gliner is not installed (pip install gliner)",
@@ -376,32 +448,32 @@
       ],
       "scores": {
         "overall": {
-          "tp": 53,
-          "fp": 6,
+          "tp": 56,
+          "fp": 7,
           "fn": 1,
-          "precision": 0.8983050847457628,
-          "recall": 0.9814814814814815,
-          "f1": 0.9380530973451328
+          "precision": 0.8888888888888888,
+          "recall": 0.9824561403508771,
+          "f1": 0.9333333333333333
         },
         "per_type": {
           "PERSON": {
-            "tp": 12,
+            "tp": 13,
             "fp": 2,
             "fn": 1,
-            "precision": 0.8571428571428571,
-            "recall": 0.9230769230769231,
-            "f1": 0.888888888888889
+            "precision": 0.8666666666666667,
+            "recall": 0.9285714285714286,
+            "f1": 0.896551724137931
           },
           "ORG": {
-            "tp": 6,
-            "fp": 4,
+            "tp": 7,
+            "fp": 5,
             "fn": 0,
-            "precision": 0.6,
+            "precision": 0.5833333333333334,
             "recall": 1.0,
-            "f1": 0.7499999999999999
+            "f1": 0.7368421052631579
           },
           "ADDRESS": {
-            "tp": 8,
+            "tp": 9,
             "fp": 0,
             "fn": 0,
             "precision": 1.0,
@@ -507,12 +579,12 @@
         },
         "per_source": {
           "body": {
-            "tp": 29,
-            "fp": 4,
+            "tp": 32,
+            "fp": 5,
             "fn": 0,
-            "precision": 0.8787878787878788,
+            "precision": 0.8648648648648649,
             "recall": 1.0,
-            "f1": 0.9354838709677419
+            "f1": 0.927536231884058
           },
           "table": {
             "tp": 13,
@@ -539,14 +611,73 @@
             "f1": 0.9090909090909091
           }
         },
-        "decoy_false_positives": 0,
-        "decoy_hits": [],
+        "decoy_false_positives": 1,
+        "decoy_by_kind": {
+          "rsk_ref": {
+            "decoys": 5,
+            "occurrences": 5,
+            "false_positives": 0
+          },
+          "usd_amount": {
+            "decoys": 4,
+            "occurrences": 4,
+            "false_positives": 0
+          },
+          "policy_date": {
+            "decoys": 2,
+            "occurrences": 2,
+            "false_positives": 0
+          },
+          "committee_title": {
+            "decoys": 1,
+            "occurrences": 2,
+            "false_positives": 1
+          },
+          "title_role": {
+            "decoys": 1,
+            "occurrences": 1,
+            "false_positives": 0
+          },
+          "org_contains_person": {
+            "decoys": 1,
+            "occurrences": 1,
+            "false_positives": 0
+          },
+          "place_non_address": {
+            "decoys": 1,
+            "occurrences": 1,
+            "false_positives": 0
+          },
+          "sentence_start_word": {
+            "decoys": 2,
+            "occurrences": 2,
+            "false_positives": 0
+          },
+          "month_name": {
+            "decoys": 1,
+            "occurrences": 2,
+            "false_positives": 0
+          },
+          "grp_ref": {
+            "decoys": 1,
+            "occurrences": 1,
+            "false_positives": 0
+          }
+        },
+        "decoy_hits": [
+          {
+            "decoy": "Risk Committee",
+            "kind": "committee_title",
+            "pred_text": "the Risk Committee"
+          }
+        ],
+        "decoy_text_not_found": [],
         "identity": {
-          "pred_pairs": 32,
+          "pred_pairs": 37,
           "correct_pred_pairs": 8,
           "truth_pairs": 27,
           "linked_truth_pairs": 8,
-          "precision": 0.25,
+          "precision": 0.21621621621621623,
           "recall": 0.2962962962962963
         }
       },
@@ -568,6 +699,17 @@
         }
       ],
       "false_positives": [
+        {
+          "file": "decoys_memo.docx",
+          "location": null,
+          "source_kind": "body",
+          "pii_type": "ORG",
+          "text": "the Risk Committee",
+          "confidence": 0.85,
+          "sources": [
+            "ner:spacy"
+          ]
+        },
         {
           "file": "prose_case.docx",
           "location": null,
@@ -635,6 +777,11 @@
           ]
         }
       ]
+    },
+    {
+      "mode": "ner_real_p3",
+      "status": "skipped",
+      "reason": "no P3 rule detector registered or importable (src.pii.rules.get_detector)"
     }
   ],
   "address": {
@@ -643,31 +790,31 @@
         "exact_recall": 1.0,
         "overlap_recall": 1.0,
         "exact_precision": 1.0,
-        "matched": 8,
-        "overlapped": 8,
-        "predicted": 8,
-        "truth": 8
+        "matched": 9,
+        "overlapped": 9,
+        "predicted": 9,
+        "truth": 9
       },
       "0.3": {
         "exact_recall": 1.0,
         "overlap_recall": 1.0,
         "exact_precision": 1.0,
-        "matched": 8,
-        "overlapped": 8,
-        "predicted": 8,
-        "truth": 8
+        "matched": 9,
+        "overlapped": 9,
+        "predicted": 9,
+        "truth": 9
       },
       "0.1": {
         "exact_recall": 1.0,
         "overlap_recall": 1.0,
         "exact_precision": 1.0,
-        "matched": 8,
-        "overlapped": 8,
-        "predicted": 8,
-        "truth": 8
+        "matched": 9,
+        "overlapped": 9,
+        "predicted": 9,
+        "truth": 9
       }
     },
-    "truth": 8,
+    "truth": 9,
     "misses_at_default": [],
     "spacy_address_spans": []
   }
