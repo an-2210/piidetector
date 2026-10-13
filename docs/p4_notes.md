@@ -54,6 +54,11 @@ Same 57 positive labels in every row, measured with the same harness. The decoy 
 | + ORG filter and relabelling (this round) | NER + mock P3 | 96.6 / 100.0 / 98.3 | 100 / 100 | 100.0 | 87.5 / 100 |
 | Same, `emit_org=false` | NER only | 95.2 / 70.2 / 80.8 | 100 / 100 | not emitted | 87.5 / 100 |
 | Same, `emit_org=false` | NER + mock P3 | 96.2 / 87.7 / 91.7 | 100 / 100 | not emitted | 87.5 / 100 |
+| **+ real P3 and GLiNER-exposed fixes (latest)** | NER only | 100.0 / 82.5 / 90.4 | 100 / 100 | 100.0 | 100 / 100 |
+| **+ real P3 and GLiNER-exposed fixes (latest)** | **NER + real P3** | **98.2 / 96.5 / 97.3** | 100 / 100 | 100.0 | 100 / 100 |
+| Same, `emit_org=false` | NER + real P3 | 98.0 / 84.2 / 90.6 | 100 / 100 | not emitted | 100 / 100 |
+
+The mock P3 now scores 100 / 100 / 100. That number is circular: the mock's patterns were written against this ground truth. **The real-P3 row is the one to quote.**
 
 By source, NER + mock P3 with ORG emitted: body 97.0 / 100, table 100 / 100, slide 100 / 100, scanned OCR 83.3 / 100.
 
@@ -69,11 +74,28 @@ Decoys: 0 false positives out of 27 occurrences. The earlier "Risk Committee" fa
 
 **Caveat.** The pattern was written with these sample addresses in view, so 100% is a ceiling on this set and not an estimate of generalisation. The memo's negatives include place names outside address context, and none produced an address. That is the only out-of-sample signal.
 
+## P3 integration
+
+P3 (`src/detectors`, written separately) is consumed through `src/pii/p3_adapter.py`. P3's code is not modified.
+
+- **Mapping.** P3's `identifier_type` maps onto `PII_TYPES`. The vocabulary gained `CARD_NUMBER` and `PSEF` to match P3. P3's `PAN` is the Indian Permanent Account Number, not a card number. P3's `INTERNAL_REF` (a suppression marker) is dropped.
+- **Ownership.** P3's structured identifiers are `owner="p3"` and win on overlap. P3's structural `ADDRESS` is left unowned, because it stops at the street and leaves out the locality. Measured: unowned, overall F1 is 0.973; owned, ADDRESS falls to 11% precision and recall and F1 to 0.825.
+- **Safety net.** Rule findings that overlap the shared ignore patterns are dropped. P3 tags the digits of `RSK-2024-0031` as a phone number in five places; the net removes all five.
+- **Switch.** `use_p3` (default on) controls discovery, so NER-only runs stay free of P3.
+
+**GLiNER, measured.** GLiNER was installed and run (`urchade/gliner_small-v2.1`). Its first run exposed three rule gaps and one fusion bug. After fixing those, GLiNER scores identically to spaCy alone in every mode, so it is opt-in (`enable_gliner=False`). The fixes were:
+- governance units without "the",
+- conjunctions of generic words ("Finance and Legal"),
+- bare place names labelled ADDRESS,
+- disagreeing backends resolved alphabetically on equal spans, now resolved by score and table-header evidence.
+
 ## Remaining misses and false positives
 
-- **Structured identifiers in NER-only mode** (SSN, PAN, PESEL, TIN, DOB, card and account last-4, DIR, MER-IN, MER-PH): all missed. NER never emits them. The rule layer (P3) owns these; with the mock P3 they are all found.
-- **PERSON false positive "Email"** (twice): spaCy tags the field label as a person. The ORG filter covers this label, but the PERSON path has no equivalent filter yet.
-- **ORG with `emit_org=false`:** ORG recall falls to 0 by design. The point of the flag is to measure what ORG contributes, not to ship ORG labels.
+With NER + real P3, the only errors are on P3's side. P4 does not patch them:
+- **PESEL missed and mislabelled.** `80010112345` is tagged PHONE (the one false positive). P3 has no PESEL detector.
+- **Card last-4 missed.** "Card ending 4421". P3 has an account last-4 rule but no card equivalent.
+
+In NER-only mode, all structured identifiers are missed by design. NER does not emit them.
 
 ## Limitations
 
@@ -81,13 +103,13 @@ Decoys: 0 false positives out of 27 occurrences. The earlier "Risk Committee" fa
 - **spaCy scores are flat.** Every ORG-like span comes back at 0.85. Context rules do the separating, and they only cover the cases listed above.
 - **Block IDs are random per run.** `TextBlock.block_id` is uuid4, so `Finding.block_id` changes between runs. Everything else is deterministic. Fixing this needs a P1 change.
 - **Cross-file linking needs one corpus call.** The per-file hook links people within a file. Cross-file identity needs `run_p4` over all blocks together, as the eval does.
-- **GLiNER is not run.** It may help with addresses, but it is untested here and it is a large dependency.
-- **No real P3 yet.** The NER + real P3 mode is skipped until a P3 detector registers.
+- **GLiNER adds nothing measurable here.** It is installed, tested, and opt-in. It may matter on documents unlike these samples.
+- **P3 gaps.** PESEL and card last-4 are missed by P3. These are listed in `docs/p3_integration.md` for the P3 owner.
 
 ## Open decisions
 
 1. Make `TextBlock.block_id` deterministic (for example uuid5 over source file and reading order). Needs a P1 change.
-2. Keep GLiNER as an optional dependency, or drop it.
+2. Keep GLiNER as an opt-in dependency, or drop it. It is neutral on this set.
 3. Confirm the §16.5 and §16.8 heading format in the case document, so the priority boost matches real headings.
 4. Obtain labelled documents from real case files, so precision and recall mean something beyond this sample.
 5. Decide the default for `emit_org` once P3 labelled fields cover organisations.
