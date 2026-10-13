@@ -1,0 +1,586 @@
+{
+  "schema_version": 1,
+  "labels": [
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Michael T. Achebe",
+      "pii_type": "PERSON",
+      "identity": "A"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Northwind Logistics Ltd",
+      "pii_type": "ORG"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "michael.achebe@northwind-logistics.com",
+      "pii_type": "EMAIL",
+      "span": [
+        126,
+        164
+      ]
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "EMP-40123",
+      "pii_type": "EMP_ID"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "14 Harbour View Road, Lagos",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Marina Street, Ibadan",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Globex Ltd",
+      "pii_type": "ORG"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Priya Raman",
+      "pii_type": "PERSON",
+      "identity": "B"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "EMP-77001",
+      "pii_type": "EMP_ID"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Acme Corp",
+      "pii_type": "ORG"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "M. Achebe",
+      "pii_type": "PERSON",
+      "identity": "A"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Michael Achebe",
+      "pii_type": "PERSON",
+      "identity": "A"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Grace Achebe",
+      "pii_type": "PERSON",
+      "identity": "C"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "priya.raman@globex-ltd.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "M. T. Achebe",
+      "pii_type": "PERSON",
+      "identity": "A"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "EMP-40123",
+      "pii_type": "EMP_ID"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "m.achebe@northwind-logistics.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "14 Harbour View Road, Lagos",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "Grace Achebe",
+      "pii_type": "PERSON",
+      "identity": "C"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "EMP-40987",
+      "pii_type": "EMP_ID"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "grace.achebe@northwind-logistics.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "7 Admiralty Way, Lekki",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "Priya Raman",
+      "pii_type": "PERSON",
+      "identity": "B"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "EMP-77001",
+      "pii_type": "EMP_ID"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "priya.raman@globex-ltd.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "9 Broad Street, Lagos Island",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "Acme Corp",
+      "pii_type": "ORG"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "source_kind": "table",
+      "text": "ops@acme-corp.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "briefing.pptx",
+      "page": 2,
+      "source_kind": "slide",
+      "text": "Michael Achebe",
+      "pii_type": "PERSON",
+      "identity": "A"
+    },
+    {
+      "file": "briefing.pptx",
+      "page": 2,
+      "source_kind": "slide",
+      "text": "Globex Ltd",
+      "pii_type": "ORG"
+    },
+    {
+      "file": "briefing.pptx",
+      "page": 2,
+      "source_kind": "slide",
+      "text": "9 Broad Street, Lagos Island",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "briefing.pptx",
+      "page": 3,
+      "source_kind": "slide",
+      "text": "Priya Raman",
+      "pii_type": "PERSON",
+      "identity": "B"
+    },
+    {
+      "file": "briefing.pptx",
+      "page": 3,
+      "source_kind": "slide",
+      "text": "EMP-77001",
+      "pii_type": "EMP_ID"
+    },
+    {
+      "file": "briefing.pptx",
+      "page": 3,
+      "source_kind": "slide",
+      "text": "priya.raman@globex-ltd.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "scanned_intake.pdf",
+      "page": 1,
+      "source_kind": "image_ocr",
+      "text": "Michael T. Achebe",
+      "pii_type": "PERSON",
+      "identity": "A"
+    },
+    {
+      "file": "scanned_intake.pdf",
+      "page": 1,
+      "source_kind": "image_ocr",
+      "text": "michael.achebe@northwind-logistics.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "scanned_intake.pdf",
+      "page": 1,
+      "source_kind": "image_ocr",
+      "text": "EMP-40123",
+      "pii_type": "EMP_ID"
+    },
+    {
+      "file": "scanned_intake.pdf",
+      "page": 1,
+      "source_kind": "image_ocr",
+      "text": "14 Harbour View Road, Lagos",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "scanned_intake.pdf",
+      "page": 1,
+      "source_kind": "image_ocr",
+      "text": "Acme Corp",
+      "pii_type": "ORG"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Michael T. Achebe",
+      "pii_type": "PERSON",
+      "identity": "A"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Grace Achebe",
+      "pii_type": "PERSON",
+      "identity": "C"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "9 Marina Road, Ikoyi",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "priya.raman@globex-ltd.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "priya.raman@globex-ltd.com",
+      "pii_type": "EMAIL"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "123-45-6789",
+      "pii_type": "SSN"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "4421",
+      "pii_type": "CARD_LAST4"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "9087",
+      "pii_type": "ACCOUNT_LAST4"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "4111 1111 1111 1111",
+      "pii_type": "CARD_NUMBER"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "80010112345",
+      "pii_type": "PESEL"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "12-3456789",
+      "pii_type": "TIN"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "14/03/1988",
+      "pii_type": "DOB"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "DIR-88421",
+      "pii_type": "DIR_ID"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "MER-IN-449120",
+      "pii_type": "MER_IN_ID"
+    },
+    {
+      "file": "structured_conflicts.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "MER-PH-220011",
+      "pii_type": "MER_PH_ID"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Dana Holt",
+      "pii_type": "PERSON",
+      "identity": "D"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "22 Allen Avenue, Ikeja",
+      "pii_type": "ADDRESS"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "source_kind": "body",
+      "text": "Achebe Holdings Ltd",
+      "pii_type": "ORG"
+    }
+  ],
+  "decoys": [
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "text": "RSK-2024-0031",
+      "kind": "rsk_ref"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "text": "$12,500",
+      "kind": "usd_amount"
+    },
+    {
+      "file": "prose_case.docx",
+      "page": null,
+      "text": "01/04/2025",
+      "kind": "policy_date"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "text": "RSK-2024-0031",
+      "kind": "rsk_ref"
+    },
+    {
+      "file": "roster_table.docx",
+      "page": null,
+      "text": "USD 4,000",
+      "kind": "usd_amount"
+    },
+    {
+      "file": "briefing.pptx",
+      "page": 2,
+      "text": "RSK-2024-0031",
+      "kind": "rsk_ref"
+    },
+    {
+      "file": "briefing.pptx",
+      "page": 3,
+      "text": "$250,000",
+      "kind": "usd_amount"
+    },
+    {
+      "file": "scanned_intake.pdf",
+      "page": 1,
+      "text": "RSK-2024-0031",
+      "kind": "rsk_ref"
+    },
+    {
+      "file": "scanned_intake.pdf",
+      "page": 1,
+      "text": "01/04/2025",
+      "kind": "policy_date"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Risk Committee",
+      "kind": "committee_title"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Chief Risk Officer",
+      "kind": "title_role",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Achebe Holdings Ltd",
+      "kind": "org_contains_person",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Lagos office",
+      "kind": "place_non_address",
+      "not_type": "ADDRESS"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Several",
+      "kind": "sentence_start_word",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Following",
+      "kind": "sentence_start_word",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "March",
+      "kind": "month_name",
+      "not_type": "PERSON"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "GRP-POL-LAGOS-01",
+      "kind": "grp_ref"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "RSK-2024-0031",
+      "kind": "rsk_ref"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "USD 18,000",
+      "kind": "usd_amount"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Finance",
+      "kind": "org_generic_word",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Legal",
+      "kind": "org_generic_word",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "Head of Compliance",
+      "kind": "org_role_phrase",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "SSN",
+      "kind": "org_pii_label",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "DOB",
+      "kind": "org_pii_label",
+      "not_type": "ORG"
+    },
+    {
+      "file": "decoys_memo.docx",
+      "page": null,
+      "text": "the Lagos Operations Team",
+      "kind": "org_unit_phrase",
+      "not_type": "ORG"
+    }
+  ]
+}
