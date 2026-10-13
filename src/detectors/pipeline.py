@@ -16,6 +16,8 @@ from src.detectors.patterns import (
     ACCOUNT_LAST4_PATTERN,
     ACCOUNT_PREFIX_PATTERN,
     ADDRESS_PATTERN,
+    CARD_LAST4_PATTERN,
+    CARD_MASKED_LAST4_PATTERN,
     CARD_PATTERN,
     DIR_PATTERN,
     DOB_PATTERN,
@@ -354,6 +356,22 @@ class RuleBasedDetector:
                     text_block_id=block.block_id,
                     context=self._extract_context(text, s, e),
                     metadata={"luhn_valid": True, "length": len([c for c in val if c.isdigit()])},
+                ))
+
+        # Card last 4 digits (context-gated on "card"). Outranks ACCOUNT_LAST4 on the same
+        # span, so "card ending in 4421" is not also reported as an account.
+        for pattern, fmt in ((CARD_LAST4_PATTERN, "ending_in"), (CARD_MASKED_LAST4_PATTERN, "masked")):
+            for m in pattern.finditer(text):
+                findings.append(Finding(
+                    detector="rule",
+                    category=FindingCategory.FINANCIAL.value,
+                    identifier_type="CARD_LAST4",
+                    value=m.group(1),
+                    start_offset=m.start(1),
+                    end_offset=m.end(1),
+                    text_block_id=block.block_id,
+                    context=self._extract_context(text, m.start(1), m.end(1)),
+                    metadata={"format": fmt},
                 ))
 
         # Account Number (last 4 digits or prefixed account ID)

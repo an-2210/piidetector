@@ -31,6 +31,7 @@ DETECTOR_PRIORITY = {
     "EMAIL": 55,
     "PHONE": 50,
     "DOB": 45,
+    "CARD_LAST4": 42,
     "ACCOUNT_LAST4": 40,
     "ADDRESS": 30,
 }

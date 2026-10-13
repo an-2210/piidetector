@@ -94,6 +94,19 @@ ACCOUNT_LAST4_PATTERN = re.compile(
     r"(?:(?:\*|x|X){4,}\s*|\b)(\d{4})\b"
 )
 
+# Card last 4 digits, gated on the word "card" like ACCOUNT_LAST4 is gated on
+# "account". Covers "card ending 4421", "card ending in 4421", "card last 4: 4421",
+# "credit card number last four 4421".
+CARD_LAST4_PATTERN = re.compile(
+    r"(?i)\b(?:credit\s+|debit\s+)?card(?:\s+(?:number|no\.?|#))?\s*"
+    r"(?:ending(?:\s+in)?|last\s*(?:4|four)(?:\s+digits)?)\s*[:\-]?\s*"
+    r"(?:[*xX\u2022]{4,}[-\s]?)?(\d{4})\b"
+)
+# Masked card such as "card: xxxx-xxxx-xxxx-1234" or "Visa card ****1234".
+CARD_MASKED_LAST4_PATTERN = re.compile(
+    r"(?i)\bcard\b[^\n.]{0,20}?(?:[*xX\u2022]{4}[-\s]?){1,3}(\d{4})\b"
+)
+
 ACCOUNT_ENDING_PATTERN = re.compile(
     r"(?i)\b(?:ending\s+in(?:\s+last\s*4)?|last\s*4\s*digits)\s*[:\-]?\s*(\d{4})\b"
 )

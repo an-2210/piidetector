@@ -510,3 +510,26 @@ def test_p3_real_phone_next_to_a_reference_is_still_detected():
     found = _types("Ticket RSK-2024-0031; call +1 415 555 2671 for help.")
     assert any(t[0] == "PHONE" for t in found)
     assert not any("2024-0031" in t[1] for t in found)
+
+
+def test_p3_card_ending_is_card_last4_and_account_ending_stays_account():
+    found = _types("Card ending 4421 and account ending 9087 were flagged.")
+    assert ("CARD_LAST4", "4421") in found
+    assert ("ACCOUNT_LAST4", "9087") in found
+    assert ("ACCOUNT_LAST4", "4421") not in found
+
+
+@pytest.mark.parametrize("text, digits", [
+    ("Credit card ending in 4421 was declined.", "4421"),
+    ("Debit card last 4: 7788", "7788"),
+    ("Visa card xxxx-xxxx-xxxx-1234 on file", "1234"),
+    ("card ****5678 charged", "5678"),
+])
+def test_p3_card_last4_formats(text, digits):
+    found = _types(text)
+    assert ("CARD_LAST4", digits) in found
+    assert ("ACCOUNT_LAST4", digits) not in found
+
+
+def test_p3_card_last4_requires_card_context():
+    assert not [t for t in _types("Order ending 4421 shipped.") if t[0] == "CARD_LAST4"]
