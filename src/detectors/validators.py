@@ -157,6 +157,24 @@ def validate_phone(raw_str: str) -> bool:
     return True
 
 
+def validate_international_phone(digits: str) -> bool:
+    """True when `phonenumbers` accepts +<digits> as a valid number with its country code.
+
+    Only meaningful when the text itself carries the international prefix: read
+    blindly, bare digits often validate by accident (80010112345 parses as an
+    international freephone number, 12345678901 as a US number). Returns False
+    if `phonenumbers` is not installed, so the caller is stricter, not looser.
+    """
+    try:
+        import phonenumbers
+    except ImportError:
+        return False
+    try:
+        return phonenumbers.is_valid_number(phonenumbers.parse("+" + digits, None))
+    except phonenumbers.NumberParseException:
+        return False
+
+
 def trim_punctuation_offsets(
     text: str, start: int, end: int
 ) -> Tuple[str, int, int]:

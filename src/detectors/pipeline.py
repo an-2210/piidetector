@@ -27,6 +27,7 @@ from src.detectors.patterns import (
     PASSPORT_CONTEXT_PATTERN,
     PASSPORT_STANDALONE_PATTERN,
     PESEL_CONTEXT_PATTERN,
+    PHONE_CUE_PATTERN,
     PESEL_PATTERN,
     PHONE_PATTERN,
     PSEF_PATTERN,
@@ -36,6 +37,7 @@ from src.detectors.patterns import (
 from src.detectors.validators import (
     luhn_checksum,
     trim_punctuation_offsets,
+    validate_international_phone,
     validate_pan,
     validate_pesel_checksum,
     validate_pesel_date,
@@ -173,6 +175,16 @@ class RuleBasedDetector:
             # Exclude false positives: dates, SSN formats, TIN formats
             if SSN_PATTERN.fullmatch(val) or TIN_PATTERN.fullmatch(val):
                 continue
+
+            # A bare 11-digit run is usually an ID (PESEL, account, reference), not a phone.
+            # Accept it only after a phone cue, or with an explicit +/00 prefix in the text
+            # that phonenumbers validates.
+            if val.isdigit() and len(val) == 11:
+                before = text[max(0, s - 25):s]
+                cued = bool(PHONE_CUE_PATTERN.search(before))
+                prefixed = before.rstrip().endswith(("+", "00"))
+                if not (cued or (prefixed and validate_international_phone(val))):
+                    continue
 
             if validate_phone(val):
                 findings.append(Finding(

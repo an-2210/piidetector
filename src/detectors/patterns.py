@@ -43,6 +43,13 @@ PHONE_PATTERN = re.compile(
 )
 
 
+# Phone cue just before a number: required for bare 11-digit numbers.
+PHONE_CUE_PATTERN = re.compile(
+    r"(?i)(?:\btel(?:ephone)?\b\.?|\bphone\b|\bmobile\b|\bmob\b\.?|\bcell\b|\bfax\b|"
+    r"\bwhatsapp\b|\bcall\b|\+)\s*(?:no\.?|number|#)?\s*[:\-]?\s*$"
+)
+
+
 # ==============================================================================
 # 4. Sensitive Identifiers
 # ==============================================================================

@@ -10,6 +10,9 @@ pytesseract>=0.3.10
 opencv-python-headless>=4.8.0
 numpy>=1.26
 
+# Rule-based detectors (P3): phone validation for prefixed international numbers
+phonenumbers>=8.13
+
 # Testing and Validation
 pytest>=8.0.0
 

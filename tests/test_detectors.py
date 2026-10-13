@@ -471,3 +471,22 @@ def test_p3_pesel_century_month_encoding():
     from src.detectors.validators import validate_pesel_date
     assert validate_pesel_date("02270803628")  # 2002-07-08 (month 27 = July, 2000s)
     assert not validate_pesel_date("02330803628")  # month 33 is outside every century band
+
+
+def test_p3_bare_11_digit_number_is_not_a_phone_without_a_cue():
+    found = _types("Reference 80010112345 logged with the bank.")
+    assert not [t for t in found if t[0] == "PHONE"]
+
+
+@pytest.mark.parametrize("text", ["Phone: 07911123456", "Mobile 07911123456", "Tel. 07911123456", "call 07911123456"])
+def test_p3_bare_11_digit_number_with_a_phone_cue_is_a_phone(text):
+    assert ("PHONE", "07911123456") in _types(text)
+
+
+def test_p3_separated_phone_numbers_are_unaffected():
+    assert any(t[0] == "PHONE" for t in _types("Call +1 (415) 555-2671 for support."))
+
+
+def test_p3_bare_11_digit_number_after_00_prefix_needs_phonenumbers_validation():
+    assert ("PHONE", "14155552671") in _types("Dial 00 14155552671 now")
+    assert not [t for t in _types("Dial 00 99999999999 now") if t[0] == "PHONE"]
