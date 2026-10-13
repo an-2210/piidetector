@@ -89,6 +89,7 @@ def run_mode(mode: str, truth: GroundTruth, sample_dir: Path, overrides: Optiona
         return {"mode": mode, "emit_org": emit_org, "status": "skipped", "reason": reason}
 
     cfg = {**_mode_config(mode), **overrides, "emit_debug": False}
+    gliner_on = cfg.get("enable_gliner", True)
     per_file = {}
     warnings: List[str] = []
     for file in truth.files:
@@ -125,6 +126,7 @@ def run_mode(mode: str, truth: GroundTruth, sample_dir: Path, overrides: Optiona
     return {
         "mode": mode,
         "emit_org": emit_org,
+        "gliner": gliner_on,
         "status": "ran",
         "title": MODE_TITLES[mode],
         "config": cfg,
@@ -249,7 +251,8 @@ def render_markdown(modes: List[Dict], address: Optional[Dict], truth: GroundTru
     ]
     for mode in modes:
         org_note = "ORG emitted" if mode.get("emit_org", True) else "ORG suppressed (used for disambiguation only)"
-        lines.append(f"## {MODE_TITLES.get(mode['mode'], mode['mode'])} [{org_note}]")
+        gl_note = "GLiNER on" if mode.get("gliner") else "GLiNER off"
+        lines.append(f"## {MODE_TITLES.get(mode['mode'], mode['mode'])} [{gl_note}; {org_note}]")
         lines.append("")
         if mode["status"] == "skipped":
             lines += [f"**Skipped:** {mode['reason']}", ""]
@@ -328,6 +331,8 @@ def render_markdown(modes: List[Dict], address: Optional[Dict], truth: GroundTru
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate P4 on the hand-labelled samples.")
     parser.add_argument("--modes", nargs="+", choices=MODES, default=list(MODES))
+    parser.add_argument("--gliner", choices=("off", "on", "both"), default="both",
+                        help="Run with the GLiNER backend off, on, or both (default: both).")
     parser.add_argument("--emit-org", choices=("true", "false", "both"), default="both",
                         help="Run with ORG emitted, suppressed, or both (default: both).")
     parser.add_argument("--ground-truth", type=Path, default=SAMPLES / "ground_truth.json")
@@ -342,9 +347,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 2
 
     emit_settings = {"true": [True], "false": [False], "both": [True, False]}[args.emit_org]
+    gliner_settings = {"off": [False], "on": [True], "both": [False, True]}[args.gliner]
     modes = [
-        run_mode(mode, truth, args.samples, {"emit_org": emit})
+        run_mode(mode, truth, args.samples, {"emit_org": emit, "enable_gliner": gl})
         for mode in args.modes
+        for gl in gliner_settings
         for emit in emit_settings
     ]
     address = address_diagnostics(truth, args.samples) if "ner_only" in args.modes else None
@@ -357,7 +364,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     (args.out / "eval_report.md").write_text(render_markdown(modes, address, truth), encoding="utf-8")
     for mode in modes:
-        label = f"{mode['mode']} emit_org={str(mode['emit_org']).lower()}"
+        label = f"{mode['mode']} gliner={str(mode.get('gliner')).lower()} emit_org={str(mode['emit_org']).lower()}"
         if mode["status"] == "ran":
             o = mode["scores"]["overall"]
             print(f"{label:<32} P={_pct(o['precision'])} R={_pct(o['recall'])} F1={_pct(o['f1'])}")

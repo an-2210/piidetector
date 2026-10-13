@@ -1,77 +1,76 @@
-# P3 integration: emitting rule findings for P4
+# P3 integration: how P4 consumes the rule detectors
 
-Written for: the P3 owner.
+Written for: the P3 owner, and reviewers of the P4 pull request.
 
 ## Read this first: `owner` and the overlap policy
 
-Every rule finding should set `owner="p3"`. The field tells P4 that P3 is authoritative for that span.
+P4 treats rule findings by their `owner` field.
 
-| Your finding | Set | Overlap result against NER |
+| Rule finding | Owner | Overlap with NER |
 |---|---|---|
-| Labelled field ("Applicant: …", "Home address: …", "Employee: …") | `owner="p3"` | Your span wins, even when NER tags the same text with a different type. A labelled PERSON beats a spaCy ORG on the same span. |
-| Structured type (EMAIL, SSN, PAN, DOB, IDs, …) | `owner="p3"` | Your span wins over any overlapping NER span. |
-| Anything else, or no owner | `None` | NER wins PERSON, ORG and ADDRESS overlaps. Your sources are kept as agreement. |
+| Structured identifier (EMAIL, SSN, TIN, DOB, IDs, CARD_NUMBER, ACCOUNT_LAST4, PSEF, PASSPORT, PAN, PHONE, EMP_ID, DIR_ID, MER_IN_ID, MER_PH_ID) | `"p3"` | P3 wins over any overlapping NER span. |
+| Labelled field (for example "Applicant: …", "Home address: …") | `"p3"` | P3 wins, even when NER tags the same text with a different type. |
+| Address (P3's `ADDRESS`) | `None` | Unowned. P4's fuller address pattern or NER may extend it. |
+| No owner | `None` | NER wins PERSON, ORG and ADDRESS overlaps. The rule's sources are kept as agreement. |
 
-Three consequences:
+Two consequences for P3:
 
-- **P4 owns addresses without a P3 claim.** P4's pattern addresses have `owner="p4"`. They fill prose gaps only. If you emit ADDRESS for a labelled field, P4 does not override it.
-- **Emit a labelled field only when the label is explicit.** A bare name without a label is left to NER.
-- **Emit exact duplicates freely.** Two patterns matching the same span merge into one finding with both sources.
+- **Set `owner="p3"` for any finding you are sure of.** Structured identifiers and labelled fields qualify. That is how P3's decision beats a NER guess.
+- **A structural address should not claim ownership.** P3 stops at the street ("14 Harbour View Road") and leaves out the locality. Owning it would beat P4's fuller span, and scoring would then count partial spans as wrong. Measured on the sample set: unowned, P3 addresses lose to P4's full span and ADDRESS scores 100% precision and recall (overall F1 0.973). With `owner="p3"`, the partial spans win and ADDRESS falls to 11% precision and recall (overall F1 0.825).
 
-## What to emit
+## How P3 is connected
 
-Return a list of `src.pii.contracts.Finding` objects from `detect(blocks)`:
+P3 is not modified. `src/pii/p3_adapter.py` converts P3's `Finding` (from `src/models/finding.py`) into the P4 `Finding` from `src/pii/contracts.py`:
 
-| Field | Value |
-| --- | --- |
-| `block_id` | `TextBlock.block_id` of the block where the span was found |
-| `start`, `end` | Character offsets into `block.text`, half-open. `block.text[start:end] == text` must hold |
-| `text` | The matched span |
-| `pii_type` | One label from `PII_TYPES` (below) |
-| `detector` | `"rule"` |
-| `confidence` | Any float in [0, 1]. P4 replaces rule confidence with a fixed high value (`rule_confidence`, default 0.95) |
-| `sources` | e.g. `["rule:p3"]`, or the specific pattern name |
-| `owner` | `"p3"` (see above) |
-| location fields | Copy `source_file`, `source_type`, `block_type`, `source_kind`, `page_number`, `slide_number`, `section_or_heading`, `reading_order` from the block. `Finding.from_block(...)` does this for you |
+| P3 field | P4 field |
+|---|---|
+| `identifier_type` | `pii_type` through `P3_TO_PII` (for example `EMP` becomes `EMP_ID`, `MER-IN` becomes `MER_IN_ID`) |
+| `start_offset`, `end_offset` | `start`, `end` |
+| `text_block_id` | `block_id` (P4 copies the block's location fields) |
+| `confidence` | `confidence` (P4 then fixes rule confidence at `rule_confidence`, default 0.95) |
+| `detector` | `detector="rule"` |
+| (none) | `sources=["rule:p3"]` and `owner` as in the table above |
 
-`identity_id` is left as `None`. P4 sets it.
+`INTERNAL_REF` is P3's suppression marker, not PII, so the adapter drops it.
+
+The adapter is found automatically by `src/pii/registry.py`:
+
+1. A `src.pii.rules` package with `get_detector()` takes precedence, if one is ever added.
+2. Otherwise `src.pii.p3_adapter` is used.
+
+It is gated by the `use_p3` flag (default `True`). Set `use_p3=False` for NER-only runs. The hook passes this flag through, so a run with `use_p3=False` contains no P3 findings.
+
+## Safety net: ignore patterns on rule findings
+
+P4 also drops rule findings that overlap `IGNORE_PATTERNS` (RSK-, ISS-, INC-, GRP-POL- references, policy dates, USD amounts, ratios). This is a safety net, not a replacement for P3's own suppression.
+
+Measured on the sample set, P3 emits `2024-0031` as a PHONE inside `RSK-2024-0031` in five places. The safety net removes all five. The one remaining PHONE false positive (PESEL, gap 1) is not an ignore-pattern case. Config flag: `apply_ignore_to_rules` (default `True`).
+
+## Gaps found in P3 on the sample set
+
+These are in P3's code. P4 does not patch them. Each has a test or a measured case in `eval/results/eval_report.md`.
+
+1. **PESEL is mislabelled as PHONE.** `PESEL: 80010112345` is tagged PHONE, which is the only false positive in the real-P3 run. PESEL is not a P3 type at all. Suggested fix: add a PESEL detector with its check digit, and do not let an 11-digit number fall through to the phone rule.
+2. **Card last-4 is not detected.** "Card ending 4421" is missed. P3 detects `account ending 9087` as ACCOUNT_LAST4, but has no card equivalent. P4 does not duplicate this.
+3. **Phone false positives from reference IDs.** The digits in `RSK-2024-0031` match the phone pattern. P4 removes them, but P3's own filter should suppress them first.
+4. **Structural addresses stop before the locality.** Full-address spans come from P4's pattern, so this is currently covered. P3 could extend its span to include the city.
 
 ## Label vocabulary
 
-`PII_TYPES`: PERSON, ORG, ADDRESS, EMAIL, PHONE, EMP_ID, DIR_ID, MER_IN_ID, MER_PH_ID, SSN, PAN, PASSPORT, PESEL, TIN, CARD_LAST4, ACCOUNT_LAST4, DOB.
+`PII_TYPES` (`src/pii/contracts.py`): PERSON, ORG, ADDRESS, EMAIL, PHONE, EMP_ID, DIR_ID, MER_IN_ID, MER_PH_ID, SSN, PAN, PASSPORT, PESEL, TIN, CARD_LAST4, CARD_NUMBER, ACCOUNT_LAST4, DOB, PSEF.
 
-Other labels are dropped by P4 with a warning. P4 does not emit ORG for field labels or generic words; those are filtered before fusion, so P3 should not emit them as ORG either.
+- `PAN` is the Indian Permanent Account Number, as in P3. It is not a card number.
+- `CARD_NUMBER` is a full card number, Luhn-validated by P3.
+- `PESEL` is in the vocabulary but has no P3 detector yet (see gap 1).
 
 ## Shared false-positive controls
 
-Import the shared list. Don't copy it.
-
-```python
-from src.pii.contracts import IGNORE_PATTERNS, ignore_spans, overlaps_ignore
-
-spans = ignore_spans(block.text)
-if not overlaps_ignore(start, end, spans):
-    findings.append(...)
-```
-
-It covers RSK-, ISS-, INC- and GRP-POL- references, policy dates, USD amounts and colon ratios. P4 applies the same list to all NER and pattern output.
-
-## How to register the detector
-
-Either option works. Neither needs a P4 change.
-
-1. **Module entry point (preferred):** create `src/pii/rules/__init__.py` with a `get_detector()` function that returns an object with `detect(blocks)`. P4 discovers it automatically.
-2. **Explicit registration:** at import time, call `src.pii.registry.register_rule_detector(detector)`.
-
-If the detector raises, P4 logs a warning and continues without it.
+P3 and P4 both use `IGNORE_PATTERNS` from `src/pii/contracts.py`. Import the list rather than copying it.
 
 ## Behaviour P4 relies on
 
-- Emit EMAIL and EMP_ID as linking evidence. P4 uses them to link people across blocks and tables. Once you emit them, P4 stops using its own internal extractor.
-- Be deterministic: same blocks in, same findings out.
-- Don't raise on empty `block.text`.
-- For table blocks, keep `block.content` as the row list with the header in row 0. P4 uses the header to find person columns.
+- Deterministic: the same blocks give the same findings.
+- Offsets are character offsets into `TextBlock.text`, and `text[start:end]` equals the value. The adapter relies on P3's Unicode-correct offsets, which the sample set confirms.
+- Table blocks keep `block.content` as rows with the header in row 0. P4 reads the header to find person columns.
 
-Check your output with `src.pii.contracts.validate_finding_dict(finding.to_dict())`. It returns a list of problems, which is empty when the finding is valid.
-
-A reference implementation that exercises every rule above is `eval/mock_p3.py`.
+To validate any rule detector's output: `src.pii.contracts.validate_finding_dict(finding.to_dict())` returns a list of problems, which is empty when valid.

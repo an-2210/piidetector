@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from src.models.text_block import TextBlock
-from src.pii.address import find_addresses
+from src.pii.address import find_addresses, has_address_structure
 from src.pii.backends import NERBackend, load_backends
 from src.pii.config import P4Config
 from src.pii.contracts import DETECTORS, PII_TYPES, Finding, ignore_spans, overlaps_ignore
@@ -127,6 +127,9 @@ def _ner_candidates(
             confidence = round(min(1.0, max(0.0, confidence)), 4)
 
             if decision.label not in PII_TYPES:
+                continue
+            if decision.label == "ADDRESS" and not has_address_structure(text, entity.start, entity.end):
+                stats["address_unstructured"] = stats.get("address_unstructured", 0) + 1
                 continue
             if decision.label == "ORG" and config.org_filter_enabled:
                 if org_false_positive_reason(entity.text, config) is not None:
@@ -263,6 +266,7 @@ def run_p4_report(
         counts={
             "org_filtered": stats.get("org_filtered", 0),
             "person_label_filtered": stats.get("person_label_filtered", 0),
+            "address_unstructured": stats.get("address_unstructured", 0),
             "rule_ignored": stats.get("rule_ignored", 0),
             "header_relabelled": stats.get("header_relabelled", 0),
             "identity_relabelled": stats.get("identity_relabelled", 0),

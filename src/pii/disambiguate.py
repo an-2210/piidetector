@@ -120,7 +120,12 @@ def org_false_positive_reason(text: str, config: P4Config) -> Optional[str]:
     if not value or ORG_SUFFIX.search(value):
         return None
     lowered = value.casefold()
-    if lowered in {w.casefold() for w in config.org_generic_words}:
+    generic = {w.casefold() for w in config.org_generic_words}
+    if lowered in generic:
+        return "generic_word"
+    tokens = re.findall(r"[A-Za-z]+", value)
+    connectors = {"and", "or", "&"}
+    if len(tokens) > 1 and all(t.casefold() in generic or t.casefold() in connectors for t in tokens):
         return "generic_word"
     if lowered in {w.casefold() for w in config.pii_field_labels}:
         return "pii_field_label"

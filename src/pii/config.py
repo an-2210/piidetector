@@ -85,7 +85,7 @@ class P4Config:
         r"^Deputy\b",
     )
     org_unit_pattern: str = (
-        r"^the\s+(?:[A-Za-z][\w-]*\s+){0,3}(?:Committee|Board|Department|Team|Function|Office|Unit)$"
+        r"^(?:the\s+)?(?:[A-Za-z][\w-]*\s+){0,3}(?:Committee|Board|Department|Team|Function|Office|Unit)$"
     )
     pii_field_labels: Tuple[str, ...] = (
         "SSN", "PAN", "DOB", "TIN", "PESEL", "Email", "Phone", "IBAN",

@@ -41,7 +41,7 @@ def test_role_phrase_is_not_an_org(text):
     assert org_false_positive_reason(text, CFG) == "role_phrase"
 
 
-@pytest.mark.parametrize("text", ["the Risk Committee", "the Audit Board", "the Lagos Operations Team", "the Compliance Unit"])
+@pytest.mark.parametrize("text", ["the Risk Committee", "the Audit Board", "the Lagos Operations Team", "the Compliance Unit", "Lagos Operations Team"])
 def test_governance_unit_phrase_is_not_an_org(text):
     assert org_false_positive_reason(text, CFG) == "unit_phrase"
 
@@ -204,3 +204,31 @@ def test_emit_org_false_hides_org_but_keeps_relabelled_persons():
     assert ("t", "PERSON") in types  # relabelled before the ORG drop
     assert all(pii != "ORG" for _, pii in types)
     assert report.counts["org_suppressed"] == 1  # Acme Corp
+
+
+@pytest.mark.parametrize("text", ["Finance and Legal", "Legal & Compliance", "HR or Audit", "Risk Committee"])
+def test_conjunction_of_generic_words_is_not_an_org(text):
+    assert org_false_positive_reason(text, CFG) == "generic_word"
+
+
+def test_conjunction_with_a_real_name_is_kept():
+    assert org_false_positive_reason("Finance and Globex", CFG) is None
+
+
+def test_ner_address_without_structure_is_dropped_and_counted():
+    block = make_block("The Lagos office handled the case.", block_id="b")
+    backend = FakeNER({"Lagos office": ("ADDRESS", 0.9)})
+
+    report = run_p4_report([block], None, {"defer_structured_to_rules": True}, backends=[backend])
+
+    assert [f for f in report.findings if f.pii_type == "ADDRESS"] == []
+    assert report.counts["address_unstructured"] == 1
+
+
+def test_ner_address_with_a_house_number_is_kept():
+    block = make_block("Sent to 22 Allen Avenue today.", block_id="b")
+    backend = FakeNER({"22 Allen Avenue": ("ADDRESS", 0.9)})
+
+    report = run_p4_report([block], None, {"defer_structured_to_rules": True}, backends=[backend])
+
+    assert [f.text for f in report.findings if f.pii_type == "ADDRESS"] == ["22 Allen Avenue"]

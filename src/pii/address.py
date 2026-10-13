@@ -57,6 +57,16 @@ def _pattern(suffixes: Sequence[str]) -> "re.Pattern[str]":
 _CACHE: dict = {}
 
 
+def has_address_structure(text: str, start: int, end: int) -> bool:
+    """True when a span has the evidence the pattern requires: a house number, a cue, or a city tail."""
+    span = text[start:end]
+    if re.search(r"\d", span):
+        return True
+    if CUE.search(text[max(0, start - CUE_WINDOW) : start]):
+        return True
+    return re.match(r"\s*,\s*[A-Z]", text[end:]) is not None
+
+
 def find_addresses(
     text: str,
     place_spans: Sequence[Tuple[int, int]],

@@ -167,7 +167,7 @@ def test_ner_only_mode_runs_end_to_end_when_models_installed():
     from eval.run_eval import run_mode
 
     truth = load_ground_truth(SAMPLE_GT)
-    outcome = run_mode("ner_only", truth, SAMPLE_GT.parent)
+    outcome = run_mode("ner_only", truth, SAMPLE_GT.parent, {"enable_gliner": False})
 
     assert outcome["status"] == "ran"
     assert outcome["backends"] == ["spacy"]
