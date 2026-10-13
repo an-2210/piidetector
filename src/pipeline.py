@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Type, Union
+from typing import Any, Dict, Tuple, Type, Union
 
 from src.extractors.base import BaseExtractor
 from src.extractors.docx_extractor import DocxExtractor
 from src.extractors.pdf_extractor import PDFExtractor
 from src.extractors.pptx_extractor import PptxExtractor
+from src.models.finding import Finding, FindingsResult
 from src.models.text_block import ExtractionResult
 from src.utils.helpers import validate_file_path
 
@@ -155,3 +156,45 @@ def extract_document(
             result.errors.append(f"P2 OCR failed: {exc}")
 
     return result
+
+
+def extract_and_detect(
+    file_path: Union[str, Path],
+    enable_ocr: bool = False,
+    run_detectors: bool = True,
+    **options: Any,
+) -> Tuple[ExtractionResult, FindingsResult]:
+    """Extract document text (P1 native, optional P2 OCR) and run P3 detectors.
+
+    Args:
+        file_path: Path to document (PDF, DOCX, PPTX).
+        enable_ocr: Whether to run P2 OCR on flagged pages/images.
+        run_detectors: Whether to run P3 rule-based sensitive identifier detectors.
+        **options: Additional options forwarded to extractors or OCR pipeline.
+
+    Returns:
+        Tuple of (ExtractionResult, FindingsResult).
+    """
+    extraction_result = extract_document(
+        file_path=file_path,
+        enable_ocr=enable_ocr,
+        **options,
+    )
+
+    if not run_detectors:
+        empty_findings = FindingsResult(
+            source_file=extraction_result.source_file,
+            findings=[],
+            total_findings=0,
+            metadata={"status": "detectors_disabled"},
+        )
+        return extraction_result, empty_findings
+
+    from src.detectors.pipeline import run_detectors_pipeline
+
+    findings_result = run_detectors_pipeline(
+        blocks=extraction_result.blocks,
+        source_file=extraction_result.source_file,
+    )
+
+    return extraction_result, findings_result
