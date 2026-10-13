@@ -43,6 +43,13 @@ PHONE_PATTERN = re.compile(
 )
 
 
+# Phone cue just before a number: required for bare 11-digit numbers.
+PHONE_CUE_PATTERN = re.compile(
+    r"(?i)(?:\btel(?:ephone)?\b\.?|\bphone\b|\bmobile\b|\bmob\b\.?|\bcell\b|\bfax\b|"
+    r"\bwhatsapp\b|\bcall\b|\+)\s*(?:no\.?|number|#)?\s*[:\-]?\s*$"
+)
+
+
 # ==============================================================================
 # 4. Sensitive Identifiers
 # ==============================================================================
@@ -54,6 +61,11 @@ PAN_PATTERN = re.compile(r"\b[A-Z]{5}\d{4}[A-Z]\b")
 
 # US Taxpayer Identification / Employer Identification Number (EIN/TIN): XX-XXXXXXX
 TIN_PATTERN = re.compile(r"\b\d{2}-\d{7}\b")
+
+# Polish PESEL: 11 digits (YYMMDD + serial + check digit), validated in validators.py
+PESEL_PATTERN = re.compile(r"\b\d{11}\b")
+# "PESEL" label shortly before the number (context boost)
+PESEL_CONTEXT_PATTERN = re.compile(r"(?i)\bPESEL\b(?:\s*(?:no\.?|nr\.?|number|#))?\s*[:\-]?\s*$")
 
 # PSEF: Professional/Public Service Entity Filing identifier (e.g. PSEF-9901-X)
 PSEF_PATTERN = re.compile(r"\bPSEF-[A-Z0-9-]{4,12}\b")
@@ -80,6 +92,19 @@ ACCOUNT_LAST4_PATTERN = re.compile(
     r"(?i)\b(?:account|acct|acc)(?:\s+(?:number|no\.?|#))?"
     r"(?:\s+(?:ending\s+in|ending|last\s*4))?\s*[:\-]?\s*"
     r"(?:(?:\*|x|X){4,}\s*|\b)(\d{4})\b"
+)
+
+# Card last 4 digits, gated on the word "card" like ACCOUNT_LAST4 is gated on
+# "account". Covers "card ending 4421", "card ending in 4421", "card last 4: 4421",
+# "credit card number last four 4421".
+CARD_LAST4_PATTERN = re.compile(
+    r"(?i)\b(?:credit\s+|debit\s+)?card(?:\s+(?:number|no\.?|#))?\s*"
+    r"(?:ending(?:\s+in)?|last\s*(?:4|four)(?:\s+digits)?)\s*[:\-]?\s*"
+    r"(?:[*xX\u2022]{4,}[-\s]?)?(\d{4})\b"
+)
+# Masked card such as "card: xxxx-xxxx-xxxx-1234" or "Visa card ****1234".
+CARD_MASKED_LAST4_PATTERN = re.compile(
+    r"(?i)\bcard\b[^\n.]{0,20}?(?:[*xX\u2022]{4}[-\s]?){1,3}(\d{4})\b"
 )
 
 ACCOUNT_ENDING_PATTERN = re.compile(
@@ -112,9 +137,12 @@ ADDRESS_PATTERN = re.compile(
 # ==============================================================================
 # 6. False-Positive Indicators
 # ==============================================================================
-# Internal non-sensitive reference prefixes to suppress
+# Internal non-sensitive reference prefixes to suppress. Matches the whole reference
+# (e.g. RSK-2024-0031, not just RSK-2024), so digits inside it can be suppressed.
+# Mirrors the reference entries of IGNORE_PATTERNS in src/pii/contracts.py (P4),
+# which P3 cannot import because that module is not on this branch. Keep in sync.
 INTERNAL_REF_PATTERN = re.compile(
-    r"\b(?:RSK-\d+|ISS-\d+|INC-\d+|GRP-POL-[\w.-]+)\b"
+    r"\b(?:RSK|ISS|INC)-[A-Z0-9][A-Z0-9-]*\b|\bGRP-POL-[\w.-]+\b"
 )
 
 # Currency and USD amounts (to prevent confusing with account / card numbers)

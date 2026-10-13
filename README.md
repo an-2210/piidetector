@@ -30,7 +30,7 @@ The **P1 Native Format Text Extraction** pipeline ingests raw documents in PDF, 
 
 ```text
 optivcasestudy/
-├── requirements.txt            # Minimal dependencies (pymupdf, python-docx, python-pptx, pillow, pytesseract, pytest)
+├── requirements.txt            # Minimal dependencies (pymupdf, python-docx, python-pptx, pillow, pytesseract, opencv-python-headless, numpy, pytest)
 ├── README.md                   # Complete module documentation & integration guide
 ├── presentation_summary.md     # Single-slide technical executive summary for P1 and P3
 ├── src/
@@ -128,6 +128,20 @@ class OCRPageFlag:
 ---
 
 ## 5. Usage & Integration Guide
+
+### Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+P2 OCR also needs the **Tesseract OCR system binary**, which pip does not install:
+
+- macOS: `brew install tesseract`
+- Debian/Ubuntu: `sudo apt-get install tesseract-ocr`
+- Windows: install from the UB Mannheim build. `src/ocr/engine.py` looks in `C:\Program Files\Tesseract-OCR` and `%LOCALAPPDATA%\Tesseract-OCR`, then on `PATH`.
+
+Without the binary, native extraction (P1) and the detectors (P3) still work; OCR (P2) does not.
 
 ### Python API
 

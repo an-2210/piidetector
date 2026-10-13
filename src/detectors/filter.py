@@ -19,6 +19,7 @@ from src.models.finding import Finding
 DETECTOR_PRIORITY = {
     "CARD_NUMBER": 100,
     "SSN": 90,
+    "PESEL": 88,
     "PAN": 85,
     "PASSPORT": 80,
     "TIN": 75,
@@ -30,6 +31,7 @@ DETECTOR_PRIORITY = {
     "EMAIL": 55,
     "PHONE": 50,
     "DOB": 45,
+    "CARD_LAST4": 42,
     "ACCOUNT_LAST4": 40,
     "ADDRESS": 30,
 }
@@ -118,7 +120,10 @@ class FalsePositiveFilter:
         """
         accepted: List[Finding] = []
         suppressed_count = 0
-        seen_keys: Set[Tuple[str, int, int, str]] = set()
+        # Spans of internal references in this block. Any candidate overlapping one is
+        # suppressed, e.g. the "2024-0031" phone match inside RSK-2024-0031.
+        ref_spans = [m.span() for m in INTERNAL_REF_PATTERN.finditer(full_text)] if full_text else []
+        seen_keys: Set[Tuple[str, int, int, str, str]] = set()
 
         for finding in findings:
             val = finding.value
@@ -126,8 +131,12 @@ class FalsePositiveFilter:
                 max(0, finding.start_offset - 30): min(len(full_text), finding.end_offset + 30)
             ]
 
-            # 1. Suppress internal tracking references (RSK-, ISS-, INC-, GRP-POL-)
+            # 1. Suppress internal tracking references (RSK-, ISS-, INC-, GRP-POL-),
+            #    including any candidate whose span falls inside one.
             if self.is_suppressed_reference(val) or finding.category == "internal_reference":
+                suppressed_count += 1
+                continue
+            if any(finding.start_offset < r_end and r_start < finding.end_offset for r_start, r_end in ref_spans):
                 suppressed_count += 1
                 continue
 
@@ -141,8 +150,10 @@ class FalsePositiveFilter:
                 suppressed_count += 1
                 continue
 
-            # 4. Deduplicate identical findings
-            key = (finding.text_block_id or "", finding.start_offset, finding.end_offset, val)
+            # 4. Deduplicate identical findings. The type is part of the key, so two rules
+            # matching the same span (e.g. PHONE and PESEL) reach priority resolution
+            # instead of the first one silently winning.
+            key = (finding.text_block_id or "", finding.start_offset, finding.end_offset, val, finding.identifier_type)
             if key in seen_keys:
                 suppressed_count += 1
                 continue

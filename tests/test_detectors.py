@@ -437,3 +437,99 @@ def test_p3_end_to_end_pipeline_integration(tmp_path: Path):
     assert findings_result.suppressed_count >= 1
     values = [f.value for f in findings_result.findings]
     assert "RSK-9002" not in values
+
+
+# ------------------------------------------------------------------------------
+# Regression tests for detector fixes (P3)
+# ------------------------------------------------------------------------------
+
+def _types(text):
+    result = run_detectors_pipeline([create_block(text)])
+    return [(f.identifier_type, f.value) for f in result.findings]
+
+
+def test_p3_pesel_labelled_string_is_pesel_not_phone():
+    # Exact string from the P4 eval. Its check digit is invalid, so the "PESEL"
+    # label is what qualifies it; it must never come out as PHONE.
+    found = _types("PAN 4111 1111 1111 1111 was declined. PESEL: 80010112345. TIN: 12-3456789.")
+    assert ("PESEL", "80010112345") in found
+    assert ("PHONE", "80010112345") not in found
+    pesel = [f for f in run_detectors_pipeline([create_block("PESEL: 80010112345")]).findings][0]
+    assert pesel.metadata["checksum_valid"] is False and pesel.confidence < 1.0
+
+
+def test_p3_pesel_valid_checksum_detected_without_label():
+    assert ("PESEL", "44051401359") in _types("Reference 44051401359 on file.")
+
+
+def test_p3_pesel_requires_valid_date_and_checksum_or_label():
+    assert not [t for t in _types("Reference 44051401358 on file.") if t[0] == "PESEL"]  # bad checksum, no label
+    assert not [t for t in _types("PESEL: 44139901359") if t[0] == "PESEL"]  # month 13 is not a valid date
+
+
+def test_p3_pesel_century_month_encoding():
+    from src.detectors.validators import validate_pesel_date
+    assert validate_pesel_date("02270803628")  # 2002-07-08 (month 27 = July, 2000s)
+    assert not validate_pesel_date("02330803628")  # month 33 is outside every century band
+
+
+def test_p3_bare_11_digit_number_is_not_a_phone_without_a_cue():
+    found = _types("Reference 80010112345 logged with the bank.")
+    assert not [t for t in found if t[0] == "PHONE"]
+
+
+@pytest.mark.parametrize("text", ["Phone: 07911123456", "Mobile 07911123456", "Tel. 07911123456", "call 07911123456"])
+def test_p3_bare_11_digit_number_with_a_phone_cue_is_a_phone(text):
+    assert ("PHONE", "07911123456") in _types(text)
+
+
+def test_p3_separated_phone_numbers_are_unaffected():
+    assert any(t[0] == "PHONE" for t in _types("Call +1 (415) 555-2671 for support."))
+
+
+def test_p3_bare_11_digit_number_after_00_prefix_needs_phonenumbers_validation():
+    assert ("PHONE", "14155552671") in _types("Dial 00 14155552671 now")
+    assert not [t for t in _types("Dial 00 99999999999 now") if t[0] == "PHONE"]
+
+
+@pytest.mark.parametrize("text", [
+    "Ticket RSK-2024-0031 covers the loss.",
+    "See ISS-2023-118440 for details.",
+    "Logged as INC-0042-5512345 yesterday.",
+    "Policy GRP-POL-LAGOS-01 applies.",
+])
+def test_p3_digits_inside_internal_references_are_not_phones_or_ids(text):
+    assert _types(text) == []
+
+
+def test_p3_ids_inside_internal_references_are_skipped():
+    assert _types("Raised under RSK-EMP-40123 last week.") == []
+
+
+def test_p3_real_phone_next_to_a_reference_is_still_detected():
+    found = _types("Ticket RSK-2024-0031; call +1 415 555 2671 for help.")
+    assert any(t[0] == "PHONE" for t in found)
+    assert not any("2024-0031" in t[1] for t in found)
+
+
+def test_p3_card_ending_is_card_last4_and_account_ending_stays_account():
+    found = _types("Card ending 4421 and account ending 9087 were flagged.")
+    assert ("CARD_LAST4", "4421") in found
+    assert ("ACCOUNT_LAST4", "9087") in found
+    assert ("ACCOUNT_LAST4", "4421") not in found
+
+
+@pytest.mark.parametrize("text, digits", [
+    ("Credit card ending in 4421 was declined.", "4421"),
+    ("Debit card last 4: 7788", "7788"),
+    ("Visa card xxxx-xxxx-xxxx-1234 on file", "1234"),
+    ("card ****5678 charged", "5678"),
+])
+def test_p3_card_last4_formats(text, digits):
+    found = _types(text)
+    assert ("CARD_LAST4", digits) in found
+    assert ("ACCOUNT_LAST4", digits) not in found
+
+
+def test_p3_card_last4_requires_card_context():
+    assert not [t for t in _types("Order ending 4421 shipped.") if t[0] == "CARD_LAST4"]

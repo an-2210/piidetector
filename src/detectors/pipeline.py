@@ -16,6 +16,8 @@ from src.detectors.patterns import (
     ACCOUNT_LAST4_PATTERN,
     ACCOUNT_PREFIX_PATTERN,
     ADDRESS_PATTERN,
+    CARD_LAST4_PATTERN,
+    CARD_MASKED_LAST4_PATTERN,
     CARD_PATTERN,
     DIR_PATTERN,
     DOB_PATTERN,
@@ -26,6 +28,9 @@ from src.detectors.patterns import (
     PAN_PATTERN,
     PASSPORT_CONTEXT_PATTERN,
     PASSPORT_STANDALONE_PATTERN,
+    PESEL_CONTEXT_PATTERN,
+    PHONE_CUE_PATTERN,
+    PESEL_PATTERN,
     PHONE_PATTERN,
     PSEF_PATTERN,
     SSN_PATTERN,
@@ -34,7 +39,10 @@ from src.detectors.patterns import (
 from src.detectors.validators import (
     luhn_checksum,
     trim_punctuation_offsets,
+    validate_international_phone,
     validate_pan,
+    validate_pesel_checksum,
+    validate_pesel_date,
     validate_phone,
     validate_ssn,
     validate_tin,
@@ -170,6 +178,16 @@ class RuleBasedDetector:
             if SSN_PATTERN.fullmatch(val) or TIN_PATTERN.fullmatch(val):
                 continue
 
+            # A bare 11-digit run is usually an ID (PESEL, account, reference), not a phone.
+            # Accept it only after a phone cue, or with an explicit +/00 prefix in the text
+            # that phonenumbers validates.
+            if val.isdigit() and len(val) == 11:
+                before = text[max(0, s - 25):s]
+                cued = bool(PHONE_CUE_PATTERN.search(before))
+                prefixed = before.rstrip().endswith(("+", "00"))
+                if not (cued or (prefixed and validate_international_phone(val))):
+                    continue
+
             if validate_phone(val):
                 findings.append(Finding(
                     detector="rule",
@@ -239,6 +257,29 @@ class RuleBasedDetector:
                     context=self._extract_context(text, s, e),
                     metadata={"jurisdiction": "US", "format": "XX-XXXXXXX"},
                 ))
+
+        # Polish PESEL: a valid date is required. A valid checksum is enough on its own;
+        # otherwise an explicit "PESEL" label before the number is required.
+        for m in PESEL_PATTERN.finditer(text):
+            val = m.group(0)
+            if not validate_pesel_date(val):
+                continue
+            checksum_ok = validate_pesel_checksum(val)
+            labelled = bool(PESEL_CONTEXT_PATTERN.search(text[max(0, m.start() - 25):m.start()]))
+            if not (checksum_ok or labelled):
+                continue
+            findings.append(Finding(
+                detector="rule",
+                category=FindingCategory.SENSITIVE.value,
+                identifier_type="PESEL",
+                value=val,
+                start_offset=m.start(),
+                end_offset=m.end(),
+                text_block_id=block.block_id,
+                confidence=1.0 if checksum_ok else 0.8,
+                context=self._extract_context(text, m.start(), m.end()),
+                metadata={"jurisdiction": "PL", "checksum_valid": checksum_ok, "context_anchored": labelled},
+            ))
 
         # PSEF
         for m in PSEF_PATTERN.finditer(text):
@@ -315,6 +356,22 @@ class RuleBasedDetector:
                     text_block_id=block.block_id,
                     context=self._extract_context(text, s, e),
                     metadata={"luhn_valid": True, "length": len([c for c in val if c.isdigit()])},
+                ))
+
+        # Card last 4 digits (context-gated on "card"). Outranks ACCOUNT_LAST4 on the same
+        # span, so "card ending in 4421" is not also reported as an account.
+        for pattern, fmt in ((CARD_LAST4_PATTERN, "ending_in"), (CARD_MASKED_LAST4_PATTERN, "masked")):
+            for m in pattern.finditer(text):
+                findings.append(Finding(
+                    detector="rule",
+                    category=FindingCategory.FINANCIAL.value,
+                    identifier_type="CARD_LAST4",
+                    value=m.group(1),
+                    start_offset=m.start(1),
+                    end_offset=m.end(1),
+                    text_block_id=block.block_id,
+                    context=self._extract_context(text, m.start(1), m.end(1)),
+                    metadata={"format": fmt},
                 ))
 
         # Account Number (last 4 digits or prefixed account ID)

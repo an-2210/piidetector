@@ -12,7 +12,11 @@ from src.extractors.docx_extractor import DocxExtractor
 from src.extractors.pdf_extractor import PDFExtractor
 from src.extractors.pptx_extractor import PptxExtractor
 from src.models.finding import Finding, FindingsResult
-from src.models.text_block import ExtractionResult
+from src.models.text_block import (
+    ExtractionResult,
+    assign_deterministic_block_ids,
+    document_key,
+)
 from src.utils.helpers import validate_file_path
 
 logger = logging.getLogger(__name__)
@@ -154,6 +158,10 @@ def extract_document(
                 path.name,
             )
             result.errors.append(f"P2 OCR failed: {exc}")
+
+    # Deterministic block IDs: the same file gives the same IDs on every run.
+    # Assigned after OCR so P2 blocks are covered too.
+    assign_deterministic_block_ids(result.blocks, document_key(path))
 
     return result
 
