@@ -232,3 +232,34 @@ def test_ner_address_with_a_house_number_is_kept():
     report = run_p4_report([block], None, {"defer_structured_to_rules": True}, backends=[backend])
 
     assert [f.text for f in report.findings if f.pii_type == "ADDRESS"] == ["22 Allen Avenue"]
+
+
+def test_backend_disagreement_in_a_name_column_is_resolved_as_person():
+    table = _grace_table()
+
+    class Disagree:
+        name = "fake"
+
+        def predict(self, text):
+            start = text.index("Grace Achebe")
+            return [
+                RawEntity(start, start + 12, "Grace Achebe", "ORG", 0.85, "spacy"),
+                RawEntity(start, start + 12, "Grace Achebe", "PERSON", 0.93, "gliner"),
+            ]
+
+    report = run_p4_report([table], None, {"defer_structured_to_rules": True}, backends=[Disagree()])
+
+    grace = [f for f in report.findings if f.text == "Grace Achebe"]
+    assert [f.pii_type for f in grace] == ["PERSON"]
+    assert grace[0].confidence >= 0.5
+
+
+def test_equal_span_type_conflict_prefers_the_higher_score():
+    from src.pii.contracts import Finding
+    from src.pii.fusion import fuse
+
+    block = make_block("Grace Achebe signed.", block_id="b")
+    org = Finding.from_block(block, 0, 12, "ORG", "ner", 0.6, ["ner:spacy"])
+    person = Finding.from_block(block, 0, 12, "PERSON", "ner", 0.9, ["ner:gliner"])
+
+    assert [f.pii_type for f in fuse([], [org, person], CFG).kept] == ["PERSON"]

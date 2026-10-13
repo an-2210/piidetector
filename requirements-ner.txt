@@ -7,11 +7,15 @@
 #           python -m spacy download en_core_web_lg
 #
 # presidio-analyzer and spaCy were installed and exercised on Python 3.14 (en_core_web_lg 3.8.0).
-# GLiNER resolves on the package index (0.2.29) but was NOT installed or run here:
-# its adapter is covered by fallback tests only.
+# GLiNER 0.2.29 was installed and exercised with urchade/gliner_small-v2.1. It is off by
+# default (P4Config.enable_gliner=False): on the sample set it scores identically to spaCy alone.
 
 presidio-analyzer>=2.2.364   # optional: Presidio AnalyzerEngine over spaCy
 spacy>=3.8.16                 # optional: NLP backend for Presidio
 
-# optional: GLiNER zero-shot NER (pulls in torch, large download)
+# optional: GLiNER zero-shot NER (pulls in torch; model download is about 800 MB)
 gliner>=0.2.29
+# GLiNER's DeBERTa-v3 tokenizer needs these to load; without sentencepiece, transformers
+# tries to read spm.model as a tiktoken file and fails.
+sentencepiece>=0.2.0
+protobuf>=4.0

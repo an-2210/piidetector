@@ -61,10 +61,13 @@ def _rank(finding: Finding) -> int:
 
 
 def _candidate_order(finding: Finding) -> Tuple:
-    # Rank first, then longer spans, then position and label, for a total order.
+    # Rank first, then longer spans, then the better-scored label for the same span,
+    # then position and label, for a total order. Without the score term, two
+    # backends that disagree on an identical span were resolved alphabetically.
     return (
         _rank(finding),
         -(finding.end - finding.start),
+        -finding.confidence,
         finding.start,
         finding.pii_type,
         finding.detector,

@@ -36,7 +36,9 @@ class P4Config:
 
     enable_spacy: bool = True
     spacy_model: str = "en_core_web_lg"
-    enable_gliner: bool = True
+    # Off by default: on the sample set GLiNER scores identically to spaCy alone
+    # (see eval/results) while adding torch and an ~800 MB model. Opt in per run.
+    enable_gliner: bool = False
     gliner_model: str = "urchade/gliner_small-v2.1"
     gliner_threshold: float = 0.4
     defer_structured_to_rules: bool = True

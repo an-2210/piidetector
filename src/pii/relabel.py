@@ -46,6 +46,14 @@ def _column_header(block: TextBlock, text: str) -> Optional[str]:
     return None
 
 
+def is_person_column(block: TextBlock, text: str, config: P4Config) -> bool:
+    """True when `text` sits in a person-like table column and has no legal suffix."""
+    if ORG_SUFFIX.search(text):
+        return False
+    header = _column_header(block, text)
+    return header is not None and header.strip().casefold() in {h.casefold() for h in config.person_column_headers}
+
+
 def force_person_by_header(
     findings: Sequence[Finding],
     blocks: Sequence[TextBlock],

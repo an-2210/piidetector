@@ -15,11 +15,11 @@ from src.pii.address import find_addresses, has_address_structure
 from src.pii.backends import NERBackend, load_backends
 from src.pii.config import P4Config
 from src.pii.contracts import DETECTORS, PII_TYPES, Finding, ignore_spans, overlaps_ignore
-from src.pii.disambiguate import decide_label, org_false_positive_reason
+from src.pii.disambiguate import LabelDecision, decide_label, org_false_positive_reason
 from src.pii.fusion import fuse
 from src.pii.linking import extract_evidence
 from src.pii.prose import block_weight, in_priority_section, is_id_like
-from src.pii.relabel import force_person_by_header, relabel_org_by_identity
+from src.pii.relabel import force_person_by_header, is_person_column, relabel_org_by_identity
 from src.pii.resolve import resolve_identities
 
 ConfigLike = Union[P4Config, Dict[str, Any], None]
@@ -119,6 +119,10 @@ def _ner_candidates(
             decision = decide_label(
                 entity.text, entity.label, text, entity.start, entity.end, overlapping, config
             )
+            # A person-like column header is structural evidence: it settles PERSON vs ORG
+            # before fusion, so backend disagreement does not push the span below threshold.
+            if decision.label in ("PERSON", "ORG") and is_person_column(block, entity.text, config):
+                decision = LabelDecision("PERSON", 1.0, "table_header")
             confidence = entity.score * weight * decision.penalty
             if is_id_like(entity.text):
                 confidence *= config.id_like_weight
@@ -148,7 +152,8 @@ def _ner_candidates(
                     decision.label,
                     "ner",
                     confidence,
-                    [f"ner:{entity.backend}"],
+                    [f"ner:{entity.backend}"]
+                    + (["p4:table_header"] if decision.reason == "table_header" else []),
                 )
             )
     return candidates
