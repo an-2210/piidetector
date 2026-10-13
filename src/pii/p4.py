@@ -8,11 +8,12 @@ warnings, identities, debug output and counts.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from src.models.text_block import TextBlock
 from src.pii.address import find_addresses, has_address_structure
-from src.pii.backends import NERBackend, load_backends
+from src.pii.backends import NERBackend, RawEntity, load_backends
 from src.pii.config import P4Config
 from src.pii.contracts import DETECTORS, PII_TYPES, Finding, ignore_spans, overlaps_ignore
 from src.pii.disambiguate import LabelDecision, decide_label, org_false_positive_reason
@@ -80,6 +81,40 @@ def _ner_candidates(
         raw = [r for r in raw if r.label != "LOCATION"]
 
         spans_to_ignore = ignore_spans(text)
+
+        # Deterministic organization fallback for legal suffixes. Run only after
+        # ignore spans are available, and avoid duplicating any overlapping ORG span.
+        org_pattern = re.compile(
+            r"\b(?:[A-Z][A-Za-z0-9&'.-]*\s+){1,5}"
+            r"(?:Corporation|Corp\.?|Incorporated|Inc\.?|Limited|Ltd\.?|LLC|PLC|Company|Co\.?)"
+            r"(?=\b|[,;:.])"
+        )
+        for match in org_pattern.finditer(text):
+            start, end = match.span()
+            if overlaps_ignore(start, end, spans_to_ignore):
+                continue
+            already_covered = any(
+                entity.label == "ORG"
+                and entity.start < end
+                and start < entity.end
+                for entity in raw
+            )
+            if already_covered:
+                continue
+            org_text = text[start:end].strip()
+            if len(org_text.split()) < 2:
+                continue
+            raw.append(
+                RawEntity(
+                    start=start,
+                    end=end,
+                    text=text[start:end],
+                    label="ORG",
+                    score=0.90,
+                    backend="org_fallback",
+                )
+            )
+
         weight = block_weight(block, config)
         priority = in_priority_section(block, config)
 
@@ -156,6 +191,28 @@ def _ner_candidates(
                     + (["p4:table_header"] if decision.reason == "table_header" else []),
                 )
             )
+
+        # Deterministic fallback for clearly suffixed legal entity names. NER models
+        # can miss a company mention in a field such as "Organization: Acme Corporation".
+        # The legal suffix provides stronger evidence than a model's missing span.
+        if backends:
+            company_pattern = re.compile(
+                r"(?<![\w])(?:[A-Z][A-Za-z0-9&.'’\-]*\s+){0,3}"
+                r"(?:Corporation|Corp|Incorporated|Inc|Limited|Ltd|LLC|LLP|PLC|GmbH)\b",
+            )
+            for match in company_pattern.finditer(text):
+                start, end = match.span()
+                if overlaps_ignore(start, end, spans_to_ignore):
+                    continue
+                # Avoid duplicating an identical ORG span already emitted by the model.
+                if any(c.block_id == block.block_id and c.start == start and c.end == end and c.pii_type == "ORG" for c in candidates):
+                    continue
+                candidates.append(
+                    Finding.from_block(
+                        block, start, end, "ORG", "ner", 0.90,
+                        ["p4:company_suffix_pattern"], owner="p4",
+                    )
+                )
     return candidates
 
 
