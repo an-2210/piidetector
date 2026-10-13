@@ -6,11 +6,41 @@ flags for downstream P2 processing, and the overall extraction result container.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
+from pathlib import Path
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
+
+
+# Fixed namespace for deterministic block IDs. Changing it changes every block ID.
+BLOCK_ID_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_URL, "optivcasestudy:textblock")
+
+
+def document_key(file_path: Union[str, Path]) -> str:
+    """SHA-256 of the file's bytes: identical content gives identical block IDs."""
+    digest = hashlib.sha256()
+    with open(file_path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def deterministic_block_id(doc_key: str, block: "TextBlock", index: int) -> str:
+    """uuid5 over (document hash, page, slide, block type, reading order, list index)."""
+    name = (
+        f"{doc_key}|p{block.page_number}|s{block.slide_number}|"
+        f"{block.block_type}|r{block.reading_order}|i{index}"
+    )
+    return str(uuid.uuid5(BLOCK_ID_NAMESPACE, name))
+
+
+def assign_deterministic_block_ids(blocks: List["TextBlock"], doc_key: str) -> None:
+    """Replace each block's ID with its deterministic uuid5, in place."""
+    for index, block in enumerate(blocks):
+        block.block_id = deterministic_block_id(doc_key, block, index)
 
 
 class BlockType(str, Enum):
@@ -32,7 +62,10 @@ class TextBlock:
     """Represents a discrete structural unit of text extracted from a native document.
 
     Attributes:
-        block_id: Unique identifier for the block.
+        block_id: Unique identifier for the block. Blocks returned by
+            `extract_document` get a deterministic uuid5 (see
+            `assign_deterministic_block_ids`). A block constructed directly
+            without an ID falls back to a random uuid4.
         source_file: Original filename or path identifier.
         source_type: Format of the source document ("PDF", "DOCX", "PPTX").
         block_type: Type of block ("body", "table", "slide").
