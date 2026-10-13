@@ -119,6 +119,9 @@ class FalsePositiveFilter:
         """
         accepted: List[Finding] = []
         suppressed_count = 0
+        # Spans of internal references in this block. Any candidate overlapping one is
+        # suppressed, e.g. the "2024-0031" phone match inside RSK-2024-0031.
+        ref_spans = [m.span() for m in INTERNAL_REF_PATTERN.finditer(full_text)] if full_text else []
         seen_keys: Set[Tuple[str, int, int, str, str]] = set()
 
         for finding in findings:
@@ -127,8 +130,12 @@ class FalsePositiveFilter:
                 max(0, finding.start_offset - 30): min(len(full_text), finding.end_offset + 30)
             ]
 
-            # 1. Suppress internal tracking references (RSK-, ISS-, INC-, GRP-POL-)
+            # 1. Suppress internal tracking references (RSK-, ISS-, INC-, GRP-POL-),
+            #    including any candidate whose span falls inside one.
             if self.is_suppressed_reference(val) or finding.category == "internal_reference":
+                suppressed_count += 1
+                continue
+            if any(finding.start_offset < r_end and r_start < finding.end_offset for r_start, r_end in ref_spans):
                 suppressed_count += 1
                 continue
 

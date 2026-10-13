@@ -124,9 +124,12 @@ ADDRESS_PATTERN = re.compile(
 # ==============================================================================
 # 6. False-Positive Indicators
 # ==============================================================================
-# Internal non-sensitive reference prefixes to suppress
+# Internal non-sensitive reference prefixes to suppress. Matches the whole reference
+# (e.g. RSK-2024-0031, not just RSK-2024), so digits inside it can be suppressed.
+# Mirrors the reference entries of IGNORE_PATTERNS in src/pii/contracts.py (P4),
+# which P3 cannot import because that module is not on this branch. Keep in sync.
 INTERNAL_REF_PATTERN = re.compile(
-    r"\b(?:RSK-\d+|ISS-\d+|INC-\d+|GRP-POL-[\w.-]+)\b"
+    r"\b(?:RSK|ISS|INC)-[A-Z0-9][A-Z0-9-]*\b|\bGRP-POL-[\w.-]+\b"
 )
 
 # Currency and USD amounts (to prevent confusing with account / card numbers)

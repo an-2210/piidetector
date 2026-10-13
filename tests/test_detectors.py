@@ -490,3 +490,23 @@ def test_p3_separated_phone_numbers_are_unaffected():
 def test_p3_bare_11_digit_number_after_00_prefix_needs_phonenumbers_validation():
     assert ("PHONE", "14155552671") in _types("Dial 00 14155552671 now")
     assert not [t for t in _types("Dial 00 99999999999 now") if t[0] == "PHONE"]
+
+
+@pytest.mark.parametrize("text", [
+    "Ticket RSK-2024-0031 covers the loss.",
+    "See ISS-2023-118440 for details.",
+    "Logged as INC-0042-5512345 yesterday.",
+    "Policy GRP-POL-LAGOS-01 applies.",
+])
+def test_p3_digits_inside_internal_references_are_not_phones_or_ids(text):
+    assert _types(text) == []
+
+
+def test_p3_ids_inside_internal_references_are_skipped():
+    assert _types("Raised under RSK-EMP-40123 last week.") == []
+
+
+def test_p3_real_phone_next_to_a_reference_is_still_detected():
+    found = _types("Ticket RSK-2024-0031; call +1 415 555 2671 for help.")
+    assert any(t[0] == "PHONE" for t in found)
+    assert not any("2024-0031" in t[1] for t in found)
