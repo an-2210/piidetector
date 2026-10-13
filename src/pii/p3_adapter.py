@@ -35,6 +35,9 @@ P3_TO_PII: Dict[str, str] = {
     "ACCOUNT_LAST4": "ACCOUNT_LAST4",
     "DOB": "DOB",
     "ADDRESS": "ADDRESS",
+    # Added when P3 gained these detectors (fix/p1-p3-issues).
+    "PESEL": "PESEL",
+    "CARD_LAST4": "CARD_LAST4",
 }
 
 # P3 identifier types that are suppression markers, not PII.
