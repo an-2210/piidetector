@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 import re
 from typing import Tuple
 
@@ -102,6 +103,34 @@ def validate_tin(tin_str: str) -> bool:
         return False
 
     return True
+
+
+PESEL_WEIGHTS = (1, 3, 7, 9, 1, 3, 7, 9, 1, 3)
+
+# PESEL encodes the century in the month: +80 for 1800s, +0 for 1900s, +20 for
+# 2000s, +40 for 2100s, +60 for 2200s.
+_PESEL_CENTURY = ((80, 1800), (60, 2200), (40, 2100), (20, 2000), (0, 1900))
+
+
+def validate_pesel_date(pesel: str) -> bool:
+    """True when the first six digits are a real date under PESEL's century-month encoding."""
+    if len(pesel) != 11 or not pesel.isdigit():
+        return False
+    yy, mm, dd = int(pesel[0:2]), int(pesel[2:4]), int(pesel[4:6])
+    for offset, century in _PESEL_CENTURY:
+        month = mm - offset
+        if 1 <= month <= 12:
+            year = century + yy
+            return 1 <= dd <= calendar.monthrange(year, month)[1]
+    return False
+
+
+def validate_pesel_checksum(pesel: str) -> bool:
+    """True when the 11th digit matches the PESEL check digit (weights 1-3-7-9)."""
+    if len(pesel) != 11 or not pesel.isdigit():
+        return False
+    total = sum(int(d) * w for d, w in zip(pesel[:10], PESEL_WEIGHTS))
+    return (10 - total % 10) % 10 == int(pesel[10])
 
 
 def validate_phone(raw_str: str) -> bool:

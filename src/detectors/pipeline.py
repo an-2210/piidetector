@@ -26,6 +26,8 @@ from src.detectors.patterns import (
     PAN_PATTERN,
     PASSPORT_CONTEXT_PATTERN,
     PASSPORT_STANDALONE_PATTERN,
+    PESEL_CONTEXT_PATTERN,
+    PESEL_PATTERN,
     PHONE_PATTERN,
     PSEF_PATTERN,
     SSN_PATTERN,
@@ -35,6 +37,8 @@ from src.detectors.validators import (
     luhn_checksum,
     trim_punctuation_offsets,
     validate_pan,
+    validate_pesel_checksum,
+    validate_pesel_date,
     validate_phone,
     validate_ssn,
     validate_tin,
@@ -239,6 +243,29 @@ class RuleBasedDetector:
                     context=self._extract_context(text, s, e),
                     metadata={"jurisdiction": "US", "format": "XX-XXXXXXX"},
                 ))
+
+        # Polish PESEL: a valid date is required. A valid checksum is enough on its own;
+        # otherwise an explicit "PESEL" label before the number is required.
+        for m in PESEL_PATTERN.finditer(text):
+            val = m.group(0)
+            if not validate_pesel_date(val):
+                continue
+            checksum_ok = validate_pesel_checksum(val)
+            labelled = bool(PESEL_CONTEXT_PATTERN.search(text[max(0, m.start() - 25):m.start()]))
+            if not (checksum_ok or labelled):
+                continue
+            findings.append(Finding(
+                detector="rule",
+                category=FindingCategory.SENSITIVE.value,
+                identifier_type="PESEL",
+                value=val,
+                start_offset=m.start(),
+                end_offset=m.end(),
+                text_block_id=block.block_id,
+                confidence=1.0 if checksum_ok else 0.8,
+                context=self._extract_context(text, m.start(), m.end()),
+                metadata={"jurisdiction": "PL", "checksum_valid": checksum_ok, "context_anchored": labelled},
+            ))
 
         # PSEF
         for m in PSEF_PATTERN.finditer(text):

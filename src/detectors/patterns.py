@@ -55,6 +55,11 @@ PAN_PATTERN = re.compile(r"\b[A-Z]{5}\d{4}[A-Z]\b")
 # US Taxpayer Identification / Employer Identification Number (EIN/TIN): XX-XXXXXXX
 TIN_PATTERN = re.compile(r"\b\d{2}-\d{7}\b")
 
+# Polish PESEL: 11 digits (YYMMDD + serial + check digit), validated in validators.py
+PESEL_PATTERN = re.compile(r"\b\d{11}\b")
+# "PESEL" label shortly before the number (context boost)
+PESEL_CONTEXT_PATTERN = re.compile(r"(?i)\bPESEL\b(?:\s*(?:no\.?|nr\.?|number|#))?\s*[:\-]?\s*$")
+
 # PSEF: Professional/Public Service Entity Filing identifier (e.g. PSEF-9901-X)
 PSEF_PATTERN = re.compile(r"\bPSEF-[A-Z0-9-]{4,12}\b")
 

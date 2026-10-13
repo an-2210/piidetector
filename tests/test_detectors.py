@@ -437,3 +437,37 @@ def test_p3_end_to_end_pipeline_integration(tmp_path: Path):
     assert findings_result.suppressed_count >= 1
     values = [f.value for f in findings_result.findings]
     assert "RSK-9002" not in values
+
+
+# ------------------------------------------------------------------------------
+# Regression tests for detector fixes (P3)
+# ------------------------------------------------------------------------------
+
+def _types(text):
+    result = run_detectors_pipeline([create_block(text)])
+    return [(f.identifier_type, f.value) for f in result.findings]
+
+
+def test_p3_pesel_labelled_string_is_pesel_not_phone():
+    # Exact string from the P4 eval. Its check digit is invalid, so the "PESEL"
+    # label is what qualifies it; it must never come out as PHONE.
+    found = _types("PAN 4111 1111 1111 1111 was declined. PESEL: 80010112345. TIN: 12-3456789.")
+    assert ("PESEL", "80010112345") in found
+    assert ("PHONE", "80010112345") not in found
+    pesel = [f for f in run_detectors_pipeline([create_block("PESEL: 80010112345")]).findings][0]
+    assert pesel.metadata["checksum_valid"] is False and pesel.confidence < 1.0
+
+
+def test_p3_pesel_valid_checksum_detected_without_label():
+    assert ("PESEL", "44051401359") in _types("Reference 44051401359 on file.")
+
+
+def test_p3_pesel_requires_valid_date_and_checksum_or_label():
+    assert not [t for t in _types("Reference 44051401358 on file.") if t[0] == "PESEL"]  # bad checksum, no label
+    assert not [t for t in _types("PESEL: 44139901359") if t[0] == "PESEL"]  # month 13 is not a valid date
+
+
+def test_p3_pesel_century_month_encoding():
+    from src.detectors.validators import validate_pesel_date
+    assert validate_pesel_date("02270803628")  # 2002-07-08 (month 27 = July, 2000s)
+    assert not validate_pesel_date("02330803628")  # month 33 is outside every century band

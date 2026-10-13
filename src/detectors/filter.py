@@ -19,6 +19,7 @@ from src.models.finding import Finding
 DETECTOR_PRIORITY = {
     "CARD_NUMBER": 100,
     "SSN": 90,
+    "PESEL": 88,
     "PAN": 85,
     "PASSPORT": 80,
     "TIN": 75,
@@ -118,7 +119,7 @@ class FalsePositiveFilter:
         """
         accepted: List[Finding] = []
         suppressed_count = 0
-        seen_keys: Set[Tuple[str, int, int, str]] = set()
+        seen_keys: Set[Tuple[str, int, int, str, str]] = set()
 
         for finding in findings:
             val = finding.value
@@ -141,8 +142,10 @@ class FalsePositiveFilter:
                 suppressed_count += 1
                 continue
 
-            # 4. Deduplicate identical findings
-            key = (finding.text_block_id or "", finding.start_offset, finding.end_offset, val)
+            # 4. Deduplicate identical findings. The type is part of the key, so two rules
+            # matching the same span (e.g. PHONE and PESEL) reach priority resolution
+            # instead of the first one silently winning.
+            key = (finding.text_block_id or "", finding.start_offset, finding.end_offset, val, finding.identifier_type)
             if key in seen_keys:
                 suppressed_count += 1
                 continue
