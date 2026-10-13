@@ -1,5 +1,10 @@
-"""Data models for document text extraction."""
+"""Data models for document text extraction and rule-based findings."""
 
+from src.models.finding import (
+    Finding,
+    FindingCategory,
+    FindingsResult,
+)
 from src.models.text_block import (
     BlockType,
     ExtractionResult,
@@ -14,4 +19,8 @@ __all__ = [
     "TextBlock",
     "OCRPageFlag",
     "ExtractionResult",
+    "Finding",
+    "FindingCategory",
+    "FindingsResult",
 ]
+

@@ -30,22 +30,35 @@ The **P1 Native Format Text Extraction** pipeline ingests raw documents in PDF, 
 
 ```text
 optivcasestudy/
-├── requirements.txt            # Minimal dependencies (pymupdf, python-docx, python-pptx, pillow, pytest)
+├── requirements.txt            # Minimal dependencies (pymupdf, python-docx, python-pptx, pillow, pytesseract, pytest)
 ├── README.md                   # Complete module documentation & integration guide
-├── presentation_summary.md     # Single-slide technical executive summary
+├── presentation_summary.md     # Single-slide technical executive summary for P1 and P3
 ├── src/
-│   ├── __init__.py             # Public API exports
-│   ├── pipeline.py             # Unified entry point: extract_document()
+│   ├── __init__.py             # Public API exports (extract_document, extract_and_detect, models)
+│   ├── pipeline.py             # Unified entry point: extract_document(), extract_and_detect()
 │   ├── cli.py                  # Command-line interface
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── text_block.py       # TextBlock, OCRPageFlag, ExtractionResult data models
-│   ├── extractors/
+│   │   ├── text_block.py       # TextBlock, OCRPageFlag, ExtractionResult data models (P1/P2)
+│   │   └── finding.py          # Finding, FindingCategory, FindingsResult data models (P3 -> P4)
+│   ├── extractors/             # P1 Native format extraction
 │   │   ├── __init__.py
 │   │   ├── base.py             # BaseExtractor abstract base class
 │   │   ├── pdf_extractor.py    # PyMuPDF extractor (tables, spatial reading order, OCR checks)
 │   │   ├── docx_extractor.py   # python-docx extractor (exact body order, tables, headers/footers)
 │   │   └── pptx_extractor.py   # python-pptx extractor (titles, shapes, groups, tables, notes)
+│   ├── ocr/                    # P2 OCR pipeline (imported from origin/main)
+│   │   ├── __init__.py
+│   │   ├── engine.py           # Tesseract OCR engine wrapper & adaptive segmentation
+│   │   ├── image_extractor.py  # Render/extract scanned pages & embedded raster images
+│   │   ├── pipeline.py         # OCR execution & duplicate text block suppression
+│   │   └── preprocessing.py    # Grayscale, scaling, adaptive binarization
+│   ├── detectors/              # P3 Rule-based sensitive identifier detectors
+│   │   ├── __init__.py
+│   │   ├── patterns.py         # Regex patterns (institutional, email, phone, sensitive, financial)
+│   │   ├── validators.py       # Algorithmic validators (Luhn MOD-10, SSA SSN, Indian PAN, US TIN)
+│   │   ├── filter.py           # False-positive controls (RSK-, ISS-, INC-, GRP-POL-, currency, ratios)
+│   │   └── pipeline.py         # Detector engine & reading-order batch orchestrator
 │   ├── evaluation/
 │   │   ├── __init__.py
 │   │   ├── metrics.py          # GroundTruthStructure & StructureRetentionEvaluator
@@ -61,7 +74,9 @@ optivcasestudy/
     ├── test_pptx_extractor.py  # PPTX slide titles, tables, notes, grouped shapes, shapes without text
     ├── test_pipeline.py        # Unified extract_document(), error handling, JSON serialization
     ├── test_ocr_handoff.py     # OCR detection on image-only/scanned documents
-    └── test_evaluation.py      # Automated validation of structure retention metrics (>= 80%)
+    ├── test_ocr_pipeline.py    # P2 OCR execution, Tesseract engine, scanned page recovery
+    ├── test_evaluation.py      # Automated validation of structure retention metrics (>= 80%)
+    └── test_detectors.py       # P3 comprehensive 15-scenario rule & false-positive test suite
 ```
 
 ---
@@ -198,21 +213,86 @@ Benchmark Result: ALL FORMATS PASSED TARGET
 
 ---
 
-## 7. Automated Test Suite
+## 7. P3: Rule-Based Detectors
 
-Run all automated unit and integration tests with pytest:
+The **P3 Rule-Based Detectors** module (`src/detectors/`) identifies structured sensitive identifiers from `TextBlock` streams emitted by P1 and P2, strictly enforcing false-positive suppression before emitting `Finding` records for downstream P4 consumption.
+
+### Supported Categories & Rules
+
+1. **Institutional Identifiers**:
+   - `EMP`: `EMP-\d{4,6}` (e.g. `EMP-40123`).
+   - `DIR`: `DIR-[A-Z0-9]{4,8}` or `DIR-\d{4,6}` (excluding common words `DIRECTOR`/`DIRECTION`).
+   - `MER-IN`: Meridian India entity code `MER-IN-[A-Z0-9]{3,8}`.
+   - `MER-PH`: Meridian Philippines entity code `MER-PH-[A-Z0-9]{3,8}`.
+2. **Email Addresses**:
+   - Standard RFC regex with boundary punctuation trimming (strips trailing `.`, `!`, `,`, `;`).
+3. **Global Phone Numbers**:
+   - E.164 and localized telephone formats (US, UK, India); requires 7–15 digits; filters dummy numbers (e.g., `000-000-0000`).
+4. **Sensitive Identifiers**:
+   - `SSN`: US SSA validation rules (disallows area `000`, `666`, `900–999`; group `00`; serial `0000`).
+   - `PAN`: Indian Permanent Account Number with 4th character entity validation (`P`, `C`, `H`, `F`, `A`, `T`, `B`, `L`, `J`, `G`).
+   - `Passport`: Context-anchored (`Passport Number: ...`) and keyword-proximate detections.
+   - `PSEF`: Public Service / filing identifier `PSEF-[A-Z0-9-]{4,12}`.
+   - `TIN`: US Taxpayer Identification / EIN `\d{2}-\d{7}`.
+5. **Financial & Account Identifiers**:
+   - `Card Numbers`: 13–19 digit cards validated with **Luhn MOD-10 algorithm**.
+   - `Account Last 4`: Contextually anchored `ending in \d{4}` or `Account ****1234`.
+   - `DOB`: Contextually anchored dates proximate to `Date of Birth`, `DOB`, `born`.
+   - `Address`: Structural street addresses (number + street name + suffix + optional unit/city/state/zip).
+
+### False-Positive Suppression Controls
+
+- **Internal Reference Suppression**: Explicitly drops `RSK-`, `ISS-`, `INC-`, and `GRP-POL-` reference numbers.
+- **Policy Dates**: Suppresses standalone effective dates, review dates, and governance timestamps that lack birth context.
+- **Currency & Ratios**: Suppresses financial amounts (`$150,000`, `USD 50M`) and ratios/percentages (`1.5x`, `2:1`, `75%`).
+- **Span Conflict Resolution**: Resolves overlapping character spans by priority (`CARD_NUMBER` > `ACCOUNT_LAST4` > digits; `SSN` > plain digits).
+- **Deduplication**: Eliminates duplicate findings within identical blocks.
+
+### Pipeline Entry Point: `extract_and_detect()`
+
+```python
+from src.pipeline import extract_and_detect
+
+extraction_result, findings_result = extract_and_detect(
+    "path/to/document.pdf",
+    enable_ocr=True,      # Optional P2 OCR for scanned pages
+    run_detectors=True,   # P3 rule-based detection
+)
+
+print(f"Total findings: {findings_result.total_findings}")
+for finding in findings_result.findings:
+    print(finding.category, finding.identifier_type, finding.value, finding.start_offset, finding.end_offset)
+```
+
+---
+
+## 8. Automated Test Suite
+
+Run the full automated test suite covering P1 native extraction, P2 OCR, and P3 rule-based detectors:
 
 ```bash
 pytest -v tests/
 ```
 
-Results: **30 tests passed in 2.7s (100% pass rate)**.
+Test coverage summary:
+- **P1 Native Extraction**: 30 tests (PDF, DOCX, PPTX extraction, table reconstruction, OCR flags, benchmarks).
+- **P2 OCR Pipeline**: 15 tests (Tesseract OCR execution, duplicate block deduplication, scanned PDF/DOCX/PPTX image recovery).
+- **P3 Rule Detectors**: 15 tests (all 5 identifier categories, Luhn checksum, SSA rules, PAN entity checks, FP suppression, Unicode offsets, P4 contract).
+
+**Total: 60 / 60 tests passed (100% pass rate)**.
 
 ---
 
-## 8. Known Limitations & P3/P4 Integration Assumptions
+## 9. P4 Redaction Handoff Contract
 
-1. **Complex PDF Multi-Column Flows**: Highly intricate magazine-style layouts with non-standard column breaks may require heuristic tuning; PyMuPDF vertical band grouping handles standard 2-column scientific and CTI reports cleanly.
-2. **Merged Table Cells**: Spanning headers (colspan/rowspan) in PDFs are normalized into rectangular 2D grids with repeated or blank placeholders.
-3. **P2 Handoff Contract**: Downstream module P2 consumes `result.ocr_needed_pages` to selectively perform OCR only on flagged pages, avoiding redundant compute.
-4. **P3/P4 Chunking Contract**: P3 should consume `result.blocks` directly. Table blocks retain both `block.content` (for tabular embeddings) and `block.text` (markdown format for LLM context prompts).
+P3 outputs conform to the downstream P4 schema:
+- `finding_id`: Unique UUID string.
+- `detector`: Set to `"rule"`.
+- `category`: `"institutional"`, `"email"`, `"phone"`, `"sensitive"`, `"financial"`.
+- `identifier_type`: Specific tag (e.g. `"EMP"`, `"SSN"`, `"CARD_NUMBER"`, `"DOB"`).
+- `value`: Target string to be redacted.
+- `start_offset` & `end_offset`: Exact 0-indexed character offsets in `TextBlock.text`. Slicing `text[start_offset:end_offset]` matches `value` exactly across all Unicode codepoints.
+- `text_block_id`: Foreign key reference to source `TextBlock.block_id`.
+- `confidence`: Confidence score (`1.0` for deterministic rules).
+- `context`: Minimal surrounding context window for audit trails.
+

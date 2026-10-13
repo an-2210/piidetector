@@ -17,11 +17,21 @@ from pytesseract import Output
 WINDOWS_TESSERACT = Path(
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 )
+USER_TESSERACT = (
+    Path.home() / "AppData" / "Local" / "Tesseract-OCR" / "tesseract.exe"
+)
 
 if WINDOWS_TESSERACT.is_file():
     pytesseract.pytesseract.tesseract_cmd = str(
         WINDOWS_TESSERACT
     )
+elif USER_TESSERACT.is_file():
+    pytesseract.pytesseract.tesseract_cmd = str(
+        USER_TESSERACT
+    )
+    import os
+    if "TESSDATA_PREFIX" not in os.environ:
+        os.environ["TESSDATA_PREFIX"] = str(USER_TESSERACT.parent / "tessdata")
 else:
     discovered = shutil.which("tesseract")
     if discovered:
