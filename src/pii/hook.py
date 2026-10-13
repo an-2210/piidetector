@@ -21,7 +21,7 @@ def run_ner_stage(
 ) -> None:
     """Run P3 (if registered) then P4 over `result.blocks`, storing output in place."""
     cfg = P4Config.from_mapping(config)
-    rule_findings, rule_warnings = collect_rule_findings(result.blocks)
+    rule_findings, rule_warnings = collect_rule_findings(result.blocks, include_p3=cfg.use_p3)
     report = run_p4_report(result.blocks, rule_findings, cfg)
 
     result.metadata["p4"] = report.to_dict(include_debug=cfg.emit_debug)

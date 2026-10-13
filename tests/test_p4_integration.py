@@ -16,7 +16,8 @@ from src.pii.contracts import Finding, validate_finding_dict
 from src.pii.p4 import run_p4_report
 from src.pipeline import extract_document
 
-NO_NER = {"enable_spacy": False, "enable_gliner": False}
+# No NER models and no P3, so the run is truly standalone.
+NO_NER = {"enable_spacy": False, "enable_gliner": False, "use_p3": False}
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 EMP_RE = re.compile(r"\bEMP-\d{4,}\b")
 

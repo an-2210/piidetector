@@ -352,7 +352,7 @@
       "page": null,
       "source_kind": "body",
       "text": "4111 1111 1111 1111",
-      "pii_type": "PAN"
+      "pii_type": "CARD_NUMBER"
     },
     {
       "file": "structured_conflicts.docx",

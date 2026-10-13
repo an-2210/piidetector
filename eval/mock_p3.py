@@ -32,7 +32,7 @@ PATTERNS: Tuple[Tuple["re.Pattern[str]", str, int, str], ...] = (
     (re.compile(r"\bMER-IN-\d{6}\b"), "MER_IN_ID", 0, "rule:mock_p3:mer_in"),
     (re.compile(r"\bMER-PH-\d{6}\b"), "MER_PH_ID", 0, "rule:mock_p3:mer_ph"),
     (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "SSN", 0, "rule:mock_p3:ssn"),
-    (re.compile(r"\b(?:\d{4}[ -]){3}\d{4}\b"), "PAN", 0, "rule:mock_p3:pan"),
+    (re.compile(r"\b(?:\d{4}[ -]){3}\d{4}\b"), "CARD_NUMBER", 0, "rule:mock_p3:card"),
     (re.compile(r"card ending\s+(\d{4})\b", re.IGNORECASE), "CARD_LAST4", 1, "rule:mock_p3:card4"),
     (re.compile(r"account ending\s+(\d{4})\b", re.IGNORECASE), "ACCOUNT_LAST4", 1, "rule:mock_p3:acct4"),
     (re.compile(r"PESEL:?\s*(\d{11})\b"), "PESEL", 1, "rule:mock_p3:pesel"),

@@ -132,6 +132,11 @@ def _ner_candidates(
                 if org_false_positive_reason(entity.text, config) is not None:
                     stats["org_filtered"] = stats.get("org_filtered", 0) + 1
                     continue
+            if decision.label == "PERSON" and config.org_filter_enabled:
+                # A field label such as "Email" is never a person, whichever way NER tags it.
+                if entity.text.strip().casefold() in {w.casefold() for w in config.pii_field_labels}:
+                    stats["person_label_filtered"] = stats.get("person_label_filtered", 0) + 1
+                    continue
             candidates.append(
                 Finding.from_block(
                     block,
@@ -147,18 +152,37 @@ def _ner_candidates(
 
 
 def _accept_rule_findings(
-    rule_findings: Sequence[Finding], warnings: List[str]
+    rule_findings: Sequence[Finding],
+    blocks: Sequence[TextBlock],
+    config: P4Config,
+    warnings: List[str],
+    stats: Dict[str, int],
 ) -> List[Finding]:
-    """Keep only rule findings that follow the contract, and say what was dropped."""
+    """Keep rule findings that follow the contract and are not reference IDs.
+
+    The ignore-pattern pass is a safety net: P3 should already suppress these
+    (for example it tags the digits in RSK-2024-0031 as a phone number).
+    """
+    by_id = {b.block_id: b for b in blocks}
+    ignore_cache: Dict[str, List] = {}
     accepted: List[Finding] = []
-    dropped = 0
+    dropped = ignored = 0
     for finding in rule_findings:
         if finding.pii_type not in PII_TYPES or finding.detector not in DETECTORS:
             dropped += 1
             continue
+        if config.apply_ignore_to_rules:
+            block = by_id.get(finding.block_id)
+            if block is not None:
+                if finding.block_id not in ignore_cache:
+                    ignore_cache[finding.block_id] = ignore_spans(block.text or "")
+                if overlaps_ignore(finding.start, finding.end, ignore_cache[finding.block_id]):
+                    ignored += 1
+                    continue
         accepted.append(finding)
     if dropped:
         warnings.append(f"Dropped {dropped} rule finding(s) that violate the Finding contract")
+    stats["rule_ignored"] = ignored
     return accepted
 
 
@@ -197,7 +221,7 @@ def run_p4_report(
     ner = _ner_candidates(blocks, backends, cfg, warnings, ignored, stats)
 
     if rule_findings:
-        rules = _accept_rule_findings(rule_findings, warnings)
+        rules = _accept_rule_findings(rule_findings, blocks, cfg, warnings, stats)
         evidence = [f for f in rules if f.pii_type in ("EMAIL", "EMP_ID")]
         extra_rules: List[Finding] = []
     else:
@@ -238,6 +262,8 @@ def run_p4_report(
         backends=[b.name for b in backends],
         counts={
             "org_filtered": stats.get("org_filtered", 0),
+            "person_label_filtered": stats.get("person_label_filtered", 0),
+            "rule_ignored": stats.get("rule_ignored", 0),
             "header_relabelled": stats.get("header_relabelled", 0),
             "identity_relabelled": stats.get("identity_relabelled", 0),
             "org_suppressed": stats.get("org_suppressed", 0),

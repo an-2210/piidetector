@@ -76,11 +76,15 @@ def _types(findings):
 
 def test_ner_plus_mock_differs_from_ner_only_on_structured_identifiers():
     registry.clear_registered_detectors()
-    ner_only = extract_document(STRUCTURED_SAMPLE, enable_ner=True, ner_config={"defer_structured_to_rules": False})
+    ner_only = extract_document(
+        STRUCTURED_SAMPLE, enable_ner=True, ner_config={"defer_structured_to_rules": False, "use_p3": False}
+    )
 
     registry.register_rule_detector(MockRegexP3())
     try:
-        with_mock = extract_document(STRUCTURED_SAMPLE, enable_ner=True, ner_config={"defer_structured_to_rules": True})
+        with_mock = extract_document(
+            STRUCTURED_SAMPLE, enable_ner=True, ner_config={"defer_structured_to_rules": True, "use_p3": False}
+        )
     finally:
         registry.clear_registered_detectors()
 
@@ -89,7 +93,7 @@ def test_ner_plus_mock_differs_from_ner_only_on_structured_identifiers():
     mock_types = {f["pii_type"] for f in mock_findings}
     ner_types = {f["pii_type"] for f in ner_findings}
 
-    for pii_type in ("SSN", "PAN", "PESEL", "TIN", "DOB", "CARD_LAST4", "ACCOUNT_LAST4", "DIR_ID", "MER_IN_ID", "MER_PH_ID"):
+    for pii_type in ("SSN", "CARD_NUMBER", "PESEL", "TIN", "DOB", "CARD_LAST4", "ACCOUNT_LAST4", "DIR_ID", "MER_IN_ID", "MER_PH_ID"):
         assert pii_type in mock_types, pii_type
     assert mock_types - ner_types  # the mock adds types NER-only never emits
 

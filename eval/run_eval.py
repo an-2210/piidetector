@@ -40,16 +40,18 @@ RESULTS = ROOT / "eval" / "results"
 MODES = ("ner_only", "ner_mock_p3", "ner_real_p3")
 MODE_TITLES = {
     "ner_only": "NER only (standalone; Presidio structured recognisers and internal extractor on)",
-    "ner_mock_p3": "NER + mock P3 (regex EMAIL/EMP_ID as rule findings; defer on)",
-    "ner_real_p3": "NER + real P3 (registered detector)",
+    "ner_mock_p3": "NER + mock P3 (regex rules in eval/mock_p3.py; P3 adapter off)",
+    "ner_real_p3": "NER + real P3 (src/detectors through src/pii/p3_adapter.py)",
 }
 ADDRESS_THRESHOLDS = (0.5, 0.3, 0.1)
 
 
 def _mode_config(mode: str) -> Dict:
     if mode == "ner_only":
-        return {"defer_structured_to_rules": False}
-    return {"defer_structured_to_rules": True}
+        return {"defer_structured_to_rules": False, "use_p3": False}
+    if mode == "ner_mock_p3":
+        return {"defer_structured_to_rules": True, "use_p3": False}
+    return {"defer_structured_to_rules": True, "use_p3": True}
 
 
 def _apply_mode(mode: str) -> Optional[str]:
@@ -57,8 +59,8 @@ def _apply_mode(mode: str) -> Optional[str]:
     registry.clear_registered_detectors()
     if mode == "ner_mock_p3":
         registry.register_rule_detector(MockRegexP3())
-    if mode == "ner_real_p3" and not registry.rule_detector_available():
-        return "no P3 rule detector registered or importable (src.pii.rules.get_detector)"
+    if mode == "ner_real_p3" and not registry.rule_detector_available(include_p3=True):
+        return "no rule detector: neither src.pii.rules nor src.pii.p3_adapter is importable"
     return None
 
 
@@ -108,7 +110,7 @@ def run_mode(mode: str, truth: GroundTruth, sample_dir: Path, overrides: Optiona
 
     rule_findings = None
     if _uses_rules(mode):
-        rule_findings, _ = registry.collect_rule_findings(blocks)
+        rule_findings, _ = registry.collect_rule_findings(blocks, include_p3=cfg["use_p3"])
     corpus = run_p4_report(blocks, rule_findings, cfg)
     corpus_preds = build_predictions(corpus.findings, blocks)
     corpus_match = match(truth.labels, corpus_preds)

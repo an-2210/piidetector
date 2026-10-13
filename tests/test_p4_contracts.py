@@ -107,7 +107,7 @@ def test_ignore_patterns_do_not_suppress_plain_names_or_emails():
 
 def test_registry_returns_none_when_no_rule_detector():
     registry.clear_registered_detectors()
-    findings, warnings = registry.collect_rule_findings([make_block()])
+    findings, warnings = registry.collect_rule_findings([make_block()], include_p3=False)
     assert findings is None
     assert warnings == []
 
@@ -125,7 +125,7 @@ def test_registry_uses_registered_detector_and_survives_failure():
     try:
         registry.register_rule_detector(Good())
         registry.register_rule_detector(Broken())
-        findings, warnings = registry.collect_rule_findings([make_block()])
+        findings, warnings = registry.collect_rule_findings([make_block()], include_p3=False)
     finally:
         registry.clear_registered_detectors()
 

@@ -82,7 +82,9 @@
             "TIN",
             "CARD_LAST4",
             "ACCOUNT_LAST4",
-            "DOB"
+            "DOB",
+            "CARD_NUMBER",
+            "PSEF"
           ]
         },
         "identity": {
@@ -157,7 +159,9 @@
             "TIN",
             "CARD_LAST4",
             "ACCOUNT_LAST4",
-            "DOB"
+            "DOB",
+            "CARD_NUMBER",
+            "PSEF"
           ],
           "description": "Optional. Only a prediction of this type counts as a false positive. Without it, any type counts."
         }

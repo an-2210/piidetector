@@ -21,6 +21,7 @@ from src.pii.contracts import Finding, RuleDetector
 logger = logging.getLogger(__name__)
 
 RULE_DETECTOR_MODULE = "src.pii.rules"
+P3_ADAPTER_MODULE = "src.pii.p3_adapter"
 
 _registered: List[RuleDetector] = []
 
@@ -35,25 +36,35 @@ def clear_registered_detectors() -> None:
     _registered.clear()
 
 
-def rule_detector_available() -> bool:
-    """True when a P3 detector is registered or importable. Does not run it."""
+def _factory_from(module_name: str):
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError:
+        return None
+    factory = getattr(module, "get_detector", None)
+    return factory if callable(factory) else None
+
+
+def rule_detector_available(include_p3: bool = True) -> bool:
+    """True when a rule detector is registered, or P3 is importable and allowed. Does not run it."""
     if _registered:
         return True
-    try:
-        module = importlib.import_module(RULE_DETECTOR_MODULE)
-    except ImportError:
-        return False
-    return callable(getattr(module, "get_detector", None))
+    if _factory_from(RULE_DETECTOR_MODULE) is not None:
+        return True
+    return include_p3 and _factory_from(P3_ADAPTER_MODULE) is not None
 
 
-def _discover(warnings: List[str]) -> List[RuleDetector]:
+def _discover(warnings: List[str], include_p3: bool = True) -> List[RuleDetector]:
+    """Registered detectors, plus the P3 detector when allowed.
+
+    `src.pii.rules` (a future P3 package with `get_detector`) takes precedence.
+    Otherwise the adapter over the current P3 code (`src.pii.p3_adapter`) is used.
+    """
     detectors: List[RuleDetector] = list(_registered)
-    try:
-        module = importlib.import_module(RULE_DETECTOR_MODULE)
-    except ImportError:
-        return detectors
-    factory = getattr(module, "get_detector", None)
-    if callable(factory):
+    factory = _factory_from(RULE_DETECTOR_MODULE)
+    if factory is None and include_p3:
+        factory = _factory_from(P3_ADAPTER_MODULE)
+    if factory is not None:
         try:
             detectors.append(factory())
         except Exception as exc:  # noqa: BLE001 - P3 failure must not stop P4
@@ -64,6 +75,7 @@ def _discover(warnings: List[str]) -> List[RuleDetector]:
 
 def collect_rule_findings(
     blocks: List[TextBlock],
+    include_p3: bool = True,
 ) -> Tuple[Optional[List[Finding]], List[str]]:
     """Run any available rule detectors over `blocks`.
 
@@ -73,7 +85,7 @@ def collect_rule_findings(
         skipped with a warning rather than failing the run.
     """
     warnings: List[str] = []
-    detectors = _discover(warnings)
+    detectors = _discover(warnings, include_p3=include_p3)
     if not detectors:
         return None, warnings
 

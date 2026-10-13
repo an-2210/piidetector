@@ -38,6 +38,9 @@ PII_TYPES: Tuple[str, ...] = (
     "CARD_LAST4",
     "ACCOUNT_LAST4",
     "DOB",
+    # Added to match P3's handoff: full card numbers (Luhn-validated) and PSEF references.
+    "CARD_NUMBER",
+    "PSEF",
 )
 
 # Types whose boundaries and labels are decided by NER in a fusion conflict.

@@ -97,6 +97,10 @@ class P4Config:
     )
     # False: ORG is used for disambiguation and relabelling, then dropped from output.
     emit_org: bool = True
+    # Use the P3 detector (src/pii/p3_adapter.py) when no src.pii.rules package exists.
+    use_p3: bool = True
+    # Safety net: drop rule findings that overlap IGNORE_PATTERNS (e.g. the digits in RSK-2024-0031).
+    apply_ignore_to_rules: bool = True
 
     @classmethod
     def from_mapping(cls, data: Optional[Mapping[str, Any]]) -> "P4Config":
