@@ -76,7 +76,8 @@ def _stable_key(finding: Any, pii_type: str, value: str) -> str:
     if identity:
         return f"identity:{identity}"
     # Repeated identical values of a given PII type receive the same token across files.
-    return f"value:{pii_type}:{re.sub(r'\\s+', ' ', value).strip().casefold()}"
+    clean_val = re.sub(r"\s+", " ", value).strip().casefold()
+    return f"value:{pii_type}:{clean_val}"
 
 
 def redact_blocks(
