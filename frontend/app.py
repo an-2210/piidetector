@@ -475,8 +475,8 @@ if result:
     cols[3].metric("P4 · Fused findings", len(p4.get("findings", [])) if isinstance(p4, dict) else 0)
     cols[4].metric("P5 · Redactions", len(redaction.findings))
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["Overview", "P3 · Rules", "P4 · NER", "P5 · Redaction", "Export"]
+    tab1, tab_p2, tab2, tab3, tab4, tab5 = st.tabs(
+        ["Overview", "P2 · OCR", "P3 · Rules", "P4 · NER", "P5 · Redaction", "Export"]
     )
     with tab1:
         if extraction.get("errors"):
@@ -497,6 +497,27 @@ if result:
         with st.expander("View extracted text blocks"):
             for i, block in enumerate(extraction.get("blocks", []), start=1):
                 st.markdown(f"**Block {i} · {block.get('block_type', 'text')}**")
+                st.text((block.get("text") or "")[:5000])
+    with tab_p2:
+        st.markdown("#### OCR extraction")
+        if not enable_ocr and not p2_stats:
+            st.info("P2 OCR was off for this run. Turn on 'P2 · OCR for scanned pages' in the sidebar and re-run.")
+        else:
+            st.write(f"**OCR engine:** {p2_stats.get('engine', 'Not reported')}")
+            st.write(f"**Images processed:** {p2_stats.get('images_processed', 0)}")
+            st.write(f"**OCR blocks added:** {p2_stats.get('ocr_blocks_added', 0)}")
+            st.write(f"**Pages with OCR additions:** {p2_stats.get('pages_with_new_ocr_blocks', [])}")
+            ocr_flags = extraction.get("ocr_needed_pages", [])
+            st.write(f"**Pages flagged as needing OCR:** {len(ocr_flags)}")
+            if ocr_flags:
+                st.json(ocr_flags)
+            ocr_blocks = [b for b in extraction.get("blocks", []) if (b.get("metadata") or {}).get("source") == "image_ocr"]
+            if not ocr_blocks:
+                st.info("OCR ran but produced no text blocks for this document.")
+            for i, block in enumerate(ocr_blocks, start=1):
+                confidence = (block.get("metadata") or {}).get("confidence")
+                label = f"OCR block {i}" + (f" · confidence {confidence:.1f}" if isinstance(confidence, (int, float)) else "")
+                st.markdown(f"**{label}**")
                 st.text((block.get("text") or "")[:5000])
     with tab2:
         st.markdown("#### Rule-based detection")
