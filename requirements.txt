@@ -16,3 +16,6 @@ phonenumbers>=8.13
 # Testing and Validation
 pytest>=8.0.0
 
+#frontend
+streamlit
+
