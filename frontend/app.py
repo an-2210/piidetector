@@ -1,58 +1,21 @@
-"""Document privacy case-study workflow: P1 extraction, optional P2 OCR, P3 rules, P4 NER, P5 redaction."""
+"""Document privacy case-study workflow: text extraction, optional OCR, rule detection, NER, redaction."""
 from __future__ import annotations
 
-import json
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
 
 import streamlit as st
 
 from src.pipeline import extract_document
 from src.detectors.pipeline import run_detectors_pipeline
 from src.p5 import redact_blocks, build_exposure_report, check_llm_safety
+from src.p5.native_export import preview_text, redact_native_file, render_pdf_preview
 
-
-def _safe_p3_export(report: Dict[str, Any]) -> Dict[str, Any]:
-    """Export P3 metadata without raw detected values or surrounding context."""
-    findings = []
-    for item in report.get("findings", []):
-        findings.append({
-            "detector": item.get("detector"),
-            "category": item.get("category"),
-            "identifier_type": item.get("identifier_type"),
-            "start_offset": item.get("start_offset"),
-            "end_offset": item.get("end_offset"),
-            "text_block_id": item.get("text_block_id"),
-            "confidence": item.get("confidence"),
-        })
-    return {key: value for key, value in report.items() if key != "findings"} | {"findings": findings}
-
-
-def _safe_p4_export(report: Any) -> Any:
-    """Export P4 spans and diagnostics without names, raw spans, or identity records."""
-    if not isinstance(report, dict):
-        return report
-    findings = []
-    for item in report.get("findings", []):
-        findings.append({
-            "block_id": item.get("block_id"),
-            "start": item.get("start"),
-            "end": item.get("end"),
-            "pii_type": item.get("pii_type"),
-            "detector": item.get("detector"),
-            "confidence": item.get("confidence"),
-            "sources": item.get("sources", []),
-            "identity_id": item.get("identity_id"),
-        })
-    return {
-        "findings": findings,
-        "warnings": report.get("warnings", []),
-        "backends": report.get("backends", []),
-        "counts": report.get("counts", {}),
-        "conflict_count": len(report.get("conflicts", [])),
-        "identity_count": len(report.get("identities", [])),
-    }
+MIME_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
 
 
 st.set_page_config(
@@ -247,12 +210,12 @@ with st.sidebar:
     st.markdown("### Analysis controls")
     st.caption("Choose which analysis stages to run on your document.")
     enable_ocr = st.toggle(
-        "P2 · OCR for scanned pages",
+        "OCR for scanned pages",
         value=False,
         help="Requires the Tesseract system application to be installed.",
     )
     enable_ner = st.toggle(
-        "P4 · Named entity recognition",
+        "Named entity recognition",
         value=True,
         help="Uses configured spaCy/Presidio backends when available.",
     )
@@ -426,7 +389,7 @@ if process and upload is not None:
             p4 = extraction.metadata.get("p4", {}) if isinstance(extraction.metadata, dict) else {}
             p4_findings = p4.get("findings", []) if isinstance(p4, dict) else []
 
-            # P5 consumes P4's fused findings when available; otherwise use P3 as fallback.
+            # Redaction uses the fused NER findings when available; otherwise it falls back to rule findings.
             redaction_findings = list(p4_findings) if p4_findings else [
                 {
                     "block_id": f.text_block_id,
@@ -440,6 +403,7 @@ if process and upload is not None:
             ]
             redaction = redact_blocks(extraction.blocks, redaction_findings)
             exposure = build_exposure_report(redaction)
+            native_export = redact_native_file(upload.getvalue(), suffix, redaction.replacements)
 
         st.session_state["optiv_result"] = {
             "filename": upload.name,
@@ -448,6 +412,7 @@ if process and upload is not None:
             "p4": p4,
             "redaction": redaction,
             "exposure": exposure,
+            "native_export": native_export,
         }
     except Exception as exc:
         st.error(f"Processing failed: {type(exc).__name__}: {exc}")
@@ -468,15 +433,15 @@ if result:
     exposure = result["exposure"]
 
     cols = st.columns(5, gap="small")
-    cols[0].metric("P1 · Text blocks", len(extraction.get("blocks", [])))
+    cols[0].metric("Text blocks", len(extraction.get("blocks", [])))
     p2_stats = extraction.get("metadata", {}).get("p2_ocr", {})
-    cols[1].metric("P2 · OCR blocks", p2_stats.get("ocr_blocks_added", 0))
-    cols[2].metric("P3 · Rule findings", p3.get("total_findings", len(p3.get("findings", []))))
-    cols[3].metric("P4 · Fused findings", len(p4.get("findings", [])) if isinstance(p4, dict) else 0)
-    cols[4].metric("P5 · Redactions", len(redaction.findings))
+    cols[1].metric("OCR blocks", p2_stats.get("ocr_blocks_added", 0))
+    cols[2].metric("Rule findings", p3.get("total_findings", len(p3.get("findings", []))))
+    cols[3].metric("Fused findings", len(p4.get("findings", [])) if isinstance(p4, dict) else 0)
+    cols[4].metric("Redactions", len(redaction.findings))
 
     tab1, tab_p2, tab2, tab3, tab4, tab5 = st.tabs(
-        ["Overview", "P2 · OCR", "P3 · Rules", "P4 · NER", "P5 · Redaction", "Export"]
+        ["Overview", "OCR", "Rules", "NER", "Redaction", "Export"]
     )
     with tab1:
         if extraction.get("errors"):
@@ -501,7 +466,7 @@ if result:
     with tab_p2:
         st.markdown("#### OCR extraction")
         if not enable_ocr and not p2_stats:
-            st.info("P2 OCR was off for this run. Turn on 'P2 · OCR for scanned pages' in the sidebar and re-run.")
+            st.info("OCR was off for this run. Turn on 'OCR for scanned pages' in the sidebar and re-run.")
         else:
             st.write(f"**OCR engine:** {p2_stats.get('engine', 'Not reported')}")
             st.write(f"**Images processed:** {p2_stats.get('images_processed', 0)}")
@@ -521,28 +486,28 @@ if result:
                 st.text((block.get("text") or "")[:5000])
     with tab2:
         st.markdown("#### Rule-based detection")
-        st.write(f"**Total P3 findings:** {p3.get('total_findings', 0)}")
+        st.write(f"**Total rule findings:** {p3.get('total_findings', 0)}")
         if not p3.get("findings"):
-            st.info("P3 found no matches in the extracted text. Check the extracted blocks in Overview to confirm the document contains detectable identifiers.")
+            st.info("Rule detection found no matches in the extracted text. Check the extracted blocks in Overview to confirm the document contains detectable identifiers.")
         st.json(p3.get("findings", []))
     with tab3:
         if isinstance(p4, dict):
             st.markdown("#### Named-entity recognition and fusion")
             backend_names = ", ".join(p4.get("backends", [])) or "None"
             st.write(f"**Backends loaded:** {backend_names}")
-            st.write(f"**P4 counts:** {p4.get('counts', {})}")
+            st.write(f"**NER counts:** {p4.get('counts', {})}")
             if not p4.get("findings"):
-                st.info("No P4 findings were reported for this document.")
+                st.info("No NER findings were reported for this document.")
             st.json(p4.get("findings", []))
             for warning in p4.get("warnings", []):
                 st.warning(warning)
         else:
-            st.info("P4 was disabled for this run.")
+            st.info("NER was disabled for this run.")
     with tab4:
         st.markdown("#### Redaction review")
         safety = check_llm_safety(redaction)
         if safety["safe"]:
-            st.success("LLM safety gate: PASS — no unresolved findings reported by P5.")
+            st.success("LLM safety gate: PASS — no unresolved findings reported by redaction.")
         else:
             st.error("LLM safety gate: BLOCKED — unresolved findings remain. Do not send this content to an LLM until reviewed.")
         st.markdown("**Exposure report**")
@@ -558,31 +523,38 @@ if result:
             use_container_width=True,
         )
     with tab5:
-        st.markdown("#### Export analysis")
-        st.caption("The export omits raw detected values and surrounding context from P3/P4 findings.")
-        export_payload = {
-            "source_file": result["filename"],
-            "p1": {
-                "source_type": extraction.get("source_type"),
-                "total_blocks": len(extraction.get("blocks", [])),
-                "ocr_needed_pages": extraction.get("ocr_needed_pages", []),
-                "errors": extraction.get("errors", []),
-            },
-            "p3": _safe_p3_export(p3),
-            "p4": _safe_p4_export(p4),
-            "p5_exposure_report": exposure,
-            "redacted_blocks": redaction.redacted_blocks,
-        }
+        st.markdown("#### Export redacted file")
+        native = result["native_export"]
+        if native["unlocated_tokens"]:
+            count = len(native["unlocated_tokens"])
+            with st.expander(f"⚠️ {count} detected value(s) were not redacted. Click to see which."):
+                st.write(
+                    "These values could not be located as text in the original file. "
+                    "This happens with text inside scanned images. Review the output before sharing."
+                )
+                st.write(", ".join(native["unlocated_tokens"]))
+        st.caption("The redacted file keeps the original format. Raw detected values are removed from it.")
+        if st.toggle("Preview redacted file before downloading", value=False, key="native_preview"):
+            if native["suffix"] == ".pdf":
+                pages = render_pdf_preview(native["bytes"], max_pages=2)
+                for number, page_png in enumerate(pages, start=1):
+                    st.image(page_png, caption=f"Redacted page {number} (first {len(pages)} shown)", use_container_width=True)
+            else:
+                st.text_area(
+                    "Redacted text preview",
+                    preview_text(native["bytes"], native["suffix"]),
+                    height=300,
+                    disabled=True,
+                )
         st.download_button(
-            "Download results JSON",
-            json.dumps(export_payload, indent=2, ensure_ascii=False),
-            file_name=f"{Path(result['filename']).stem}_case_study_results.json",
-            mime="application/json",
+            f"Download redacted {native['suffix'][1:].upper()}",
+            native["bytes"],
+            file_name=f"{Path(result['filename']).stem}_redacted{native['suffix']}",
+            mime=MIME_TYPES[native["suffix"]],
             use_container_width=True,
         )
-        st.caption("The results JSON includes redacted blocks and detection metadata. Raw detected values, surrounding context, and identity names are omitted from the export.")
 
 st.markdown(
-    '<div class="optiv-footer">DOCUMENT PRIVACY CASE STUDY &nbsp; • &nbsp; P1–P5 ANALYSIS</div>',
+    '<div class="optiv-footer">DOCUMENT PRIVACY CASE STUDY &nbsp; • &nbsp; ANALYSIS</div>',
     unsafe_allow_html=True,
 )

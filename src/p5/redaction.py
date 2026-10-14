@@ -33,6 +33,8 @@ class RedactionResult:
     findings: List[Dict[str, Any]]
     unresolved_findings: List[Dict[str, Any]]
     token_map: Dict[str, str] = field(default_factory=dict, repr=False)
+    # (original value, token) pairs, kept in memory only for native-format export. Never serialized.
+    replacements: List[Tuple[str, str]] = field(default_factory=list, repr=False)
 
     @property
     def redacted_text(self) -> str:
@@ -124,6 +126,7 @@ def redact_blocks(
 
     safe_findings: List[Dict[str, Any]] = []
     redacted_blocks: List[Dict[str, Any]] = []
+    pair_list: List[Tuple[str, str]] = []
     for block in blocks:
         spans = sorted(grouped.get(block.block_id, []), key=lambda f: (f["start"], f["end"]))
         # Overlapping spans are ambiguous; fail closed rather than partially redact.
@@ -147,6 +150,7 @@ def redact_blocks(
                 registry[key] = f"{prefix}{n}]"
             token = registry[key]
             replacements.append((item["start"], item["end"], token, item))
+            pair_list.append((item["value"], token))
         for start, end, token, item in reversed(replacements):
             redacted = redacted[:start] + token + redacted[end:]
         for _, _, token, item in replacements:
@@ -170,6 +174,7 @@ def redact_blocks(
         findings=safe_findings,
         unresolved_findings=unresolved,
         token_map=registry,
+        replacements=list(dict.fromkeys(pair_list)),
     )
 
 
