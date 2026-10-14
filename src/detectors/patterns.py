@@ -37,9 +37,9 @@ EMAIL_PATTERN = re.compile(
 # Supports +, country codes, optional parentheses, spaces/hyphens/dots
 PHONE_PATTERN = re.compile(
     r"(?:(?:\+|00)\b[1-9]\d{0,2}[-.\s]?)?"        # International prefix e.g. +1, +44, +91
-    r"(?:\(?\d{2,5}\)?[-.\s]?)?"                  # Area code e.g. (800), 020
-    r"\d{3,5}[-.\s]?"                             # Exchange e.g. 555, 98765
-    r"\d{4,5}\b"                                  # Subscriber number e.g. 0199, 43210
+    r"(?:\(?\d{2,5}\)?[-.\s]?)?"                  # Area code e.g. (800), (555), 020
+    r"(?:\d{3,5}[-.\s]?)?"                        # Optional exchange e.g. 555, 98765
+    r"\d{4,5}\b"                                  # Subscriber number e.g. 0114, 43210
 )
 
 
